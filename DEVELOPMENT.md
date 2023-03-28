@@ -13,41 +13,24 @@
 # INSTALL BINARIES FROM SOURCE
 
 ```console
-$ tinyrick install
+$ cargo install
 ```
 
 # UNINSTALL BINARIES
 
 ```console
-$ tinyrick uninstall
+$ cargo uninstall rocky
 ```
 
 # SECURITY AUDIT
 
 ```console
-$ tinyrick audit
-```
-
-# BUILD: Doc, Lint, Test, and Compile
-
-```console
-$ tinyrick [build]
+$ cargo audit
 ```
 
 # PORT
 
 ```console
-$ tinyrick port
-```
-
-# PUBLISH CRATE
-
-```console
-$ tinyrick publish
-```
-
-# CLEAN
-
-```console
-$ tinyrick clean
+$ rocky
+...
 ```
