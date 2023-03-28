@@ -9,6 +9,7 @@
 * [direnv](https://direnv.net/) 2
 * [cargo-cache](https://crates.io/crates/cargo-cache)
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
+* GNU compatible [time](https://www.gnu.org/software/time/)
 
 # INSTALL BINARIES FROM SOURCE
 

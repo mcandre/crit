@@ -28,6 +28,7 @@ lazy_static::lazy_static! {
             "armv7r-none-eabi",
             "asmjs-unknown-emscripten",
             "i586-pc-windows-msvc",
+            "i686-pc-windows-msvc",
         ].join("|")
     ).unwrap();
 }

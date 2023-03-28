@@ -40,6 +40,7 @@ FreeBSD
 * [direnv](https://direnv.net/) 2
 * [cargo-cache](https://crates.io/crates/cargo-cache)
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
+* GNU compatible [time](https://www.gnu.org/software/time/)
 * [Amphetamine](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12) (macOS), [The Caffeine](https://www.microsoft.com/store/productId/9PJBW5SCH9LC) (Windows), [Caffeine](https://launchpad.net/caffeine) (Linux) can prevent hibernation during any long builds
 
 # CONTRIBUTING
