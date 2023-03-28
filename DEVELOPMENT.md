@@ -1,6 +1,6 @@
 # BUILDTIME REQUIREMENTS
 
-* [Rust](https://www.rust-lang.org/en-US/) 1.63+ with `rustup component add clippy` and `cargo install cargo-audit@0.17.5 tinyrick@0.0.9`
+* [Rust](https://www.rust-lang.org/en-US/) 1.64+ with `rustup component add clippy` and `cargo install cargo-audit@0.17.5 tinyrick@0.0.9`
 * [Docker](https://www.docker.com/) 20.10.12+
 
 ## Recommended
