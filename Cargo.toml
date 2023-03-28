@@ -1,0 +1,22 @@
+[package]
+name = "rocky"
+description = "Rust cross-compiler"
+version = "0.0.1"
+authors = ["Andrew Pennebaker <andrew.pennebaker@gmail.com>"]
+license = "BSD-2-Clause"
+homepage = "https://github.com/mcandre/rocky"
+documentation = "https://docs.rs/rocky/"
+
+[dependencies]
+atomic-option = "0.1.2"
+ctrlc = "3.2.0"
+getopts = "0.2.18"
+lazy_static = "1.4.0"
+regex = "1.7.3"
+
+# [lib]
+# name = "rocky"
+
+[[bin]]
+name = "rocky"
+path = "src/rocky.rs"
