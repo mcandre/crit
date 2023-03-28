@@ -20,14 +20,6 @@ aarch64-unknown-linux-gnu
 ...
 ```
 
-# CRATE
-
-https://crates.io/crates/rocky
-
-# API DOCUMENTATION
-
-https://docs.rs/rocky/
-
 # LICENSE
 
 FreeBSD
@@ -40,12 +32,13 @@ FreeBSD
 
 ## Recommended
 
-* ~100 GB disk space, for cross Docker images
 * a host capable of running musl/Linux containers (e.g. a GNU/Linux, musl/Linux, macOS, or Windows host)
+* 16 GB+ RAM and 128 GB+ disk space, in order to handle many Docker containers and images
 * [ASDF](https://asdf-vm.com/) 0.10 (run `asdf reshim` after each Rust application binary installation)
 * [direnv](https://direnv.net/) 2
 * [cargo-cache](https://crates.io/crates/cargo-cache)
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
+* [Amphetamine](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12) (macOS), [The Caffeine](https://www.microsoft.com/store/productId/9PJBW5SCH9LC) (Windows), [Caffeine](https://launchpad.net/caffeine) (Linux) can prevent hibernation during any long builds
 
 # CONTRIBUTING
 
