@@ -20,6 +20,8 @@ aarch64-unknown-linux-gnu
 ...
 ```
 
+See `rocky -h` for more options.
+
 # LICENSE
 
 FreeBSD
