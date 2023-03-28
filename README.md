@@ -47,6 +47,14 @@ FreeBSD
 
 For more details on developing tinyrick itself, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
+# FAQ
+
+## How can I provide more disk space for Docker?
+
+```
+$ docker system prune -a
+```
+
 # CREDITS
 
 * [cross](https://github.com/cross-rs/cross) underlying cross-compiler system
