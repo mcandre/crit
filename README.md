@@ -28,6 +28,10 @@ https://crates.io/crates/rocky
 
 https://docs.rs/rocky/
 
+# LICENSE
+
+FreeBSD
+
 # RUNTIME REQUIREMENTS
 
 * [Rust](https://www.rust-lang.org/en-US/) 1.64+
