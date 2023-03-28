@@ -51,9 +51,9 @@ For more details on developing tinyrick itself, see [DEVELOPMENT.md](DEVELOPMENT
 
 ## How can I provide more disk space for Docker?
 
-```
-$ docker system prune -a
-```
+* Remove stale containers listed in `docker ps -a`
+* Remove stale images listed in `docker images`
+* Run `docker system prune -a`
 
 # CREDITS
 
