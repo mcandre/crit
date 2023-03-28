@@ -1,5 +1,7 @@
 # rocky: Rust cross-compiler
 
+![red rock crab](rocky.png)
+
 # CAUTION
 
 Work in progress.
@@ -44,8 +46,6 @@ https://docs.rs/rocky/
 # CONTRIBUTING
 
 For more details on developing tinyrick itself, see [DEVELOPMENT.md](DEVELOPMENT.md).
-
-![red rock crab](rocky.png)
 
 # CREDITS
 
