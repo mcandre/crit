@@ -29,6 +29,7 @@ lazy_static::lazy_static! {
             "asmjs-unknown-emscripten",
             "i586-pc-windows-msvc",
             "i686-pc-windows-msvc",
+            "nvidia-cuda",
         ].join("|")
     ).unwrap();
 }

@@ -35,7 +35,6 @@ FreeBSD
 ## Recommended
 
 * a host capable of running musl/Linux containers (e.g. a GNU/Linux, musl/Linux, macOS, or Windows host)
-* 16 GB+ RAM and 128 GB+ disk space, in order to handle many Docker containers and images
 * [ASDF](https://asdf-vm.com/) 0.10 (run `asdf reshim` after each Rust application binary installation)
 * [direnv](https://direnv.net/) 2
 * [cargo-cache](https://crates.io/crates/cargo-cache)
@@ -49,8 +48,14 @@ For more details on developing tinyrick itself, see [DEVELOPMENT.md](DEVELOPMENT
 
 # FAQ
 
-## How can I provide more disk space for Docker?
+## How can I provide more resources to Docker?
 
+* For laptops, ensure host is receiving power from a wall outlet
+* Quit any other resource-intensive applications that may be running
+* Set `CPUs` to the number of (efficiency) cores
+* Set `Memory` to 8 GB or higher
+* Set `Swap` to 1 GB or higher
+* Set `Virtual disk limit` to 128 GB or higher
 * Remove stale containers listed in `docker ps -a`
 * Remove stale images listed in `docker images`
 * Run `docker system prune -a`
