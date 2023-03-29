@@ -76,14 +76,20 @@ fn main() {
     let artifact_root : &path::Path = path::Path::new(ROCKY_ARTIFACT_ROOT);
     let mut target_exclusion_pattern : regex::Regex = DEFAULT_TARGET_EXCLUSION_PATTERNS.clone();
     let list_targets : bool;
-    let arguments : Vec<String> = env::args().collect();
-    let rest : Vec<String>;
+
+    let mut rest : Vec<String> = vec!["-r"]
+        .iter()
+        .map(|e| e.to_string())
+        .collect();
+
+
     let mut opts : getopts::Options = getopts::Options::new();
     opts.optflag("c", "clean", "delete .rocky artifacts directory");
     opts.optopt("e", "exclude-targets", "exclude targets", "<rust regex>");
     opts.optflag("l", "list-targets", "list enabled targets");
     opts.optflag("h", "help", "print usage info");
     opts.optflag("v", "version", "print version info");
+    let arguments : Vec<String> = env::args().collect();
 
     match opts.parse(&arguments[1..]) {
         Err(_) => {
@@ -110,7 +116,9 @@ fn main() {
                 target_exclusion_pattern = regex::Regex::new(&ep).unwrap();
             }
 
-            rest = optmatches.free;
+            if !optmatches.free.is_empty() {
+                rest = optmatches.free;
+            }
         }
     }
 

@@ -20,6 +20,8 @@ aarch64-unknown-linux-gnu
 ...
 ```
 
+By default, rocky builds in release mode (`-- -r`).
+
 See `rocky -h` for more options.
 
 # LICENSE
