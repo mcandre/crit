@@ -21,14 +21,15 @@ lazy_static::lazy_static! {
         &[
             "aarch64-pc-windows-msvc",
             "emscripten",
-            "ios",
             "fuchsia",
-            "none-eabi",
             "i586-pc-windows-msvc",
             "i686-pc-windows-msvc",
+            "ios",
+            "none-eabi",
             "nvidia-cuda",
             "unknown-none",
             "wasm32",
+            "x86_64-fortanix-unknown-sgx",
         ].join("|")
     ).unwrap();
 }
