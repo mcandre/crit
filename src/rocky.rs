@@ -22,20 +22,18 @@ lazy_static::lazy_static! {
     /// or targets without community supported cross images.
     static ref DEFAULT_TARGET_EXCLUSION_PATTERNS : regex::Regex = regex::Regex::new(
         &[
-            "aarch64-pc-windows-msvc",
+            "(a|i).+-pc-windows-msvc",
+            "cuda",
             "emscripten",
+            "fortanix",
             "fuchsia",
             "gnux32",
-            "i586-pc-windows-msvc",
-            "i686-pc-windows-msvc",
             "ios",
             "none-eabi",
-            "nvidia-cuda",
+            "pc-solaris",
             "redox",
             "unknown-none",
-            "wasm32",
-            "x86_64-fortanix-unknown-sgx",
-            "x86_64-pc-solaris",
+            "wasm",
         ].join("|")
     ).unwrap();
 }
