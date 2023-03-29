@@ -17,6 +17,9 @@ pub static ROCKY_ARTIFACT_ROOT : &str = ".rocky";
 lazy_static::lazy_static! {
     static ref RUSTUP_TARGET_PATTERN : regex::Regex = regex::Regex::new(r"(\S+)").unwrap();
 
+    /// DEFAULT_TARGET_EXCLUSION_PATTERNS collects patterns for problematic target triples,
+    /// such as bare metal targets that may lack support for the `std` package,
+    /// or targets without community supported cross images.
     static ref DEFAULT_TARGET_EXCLUSION_PATTERNS : regex::Regex = regex::Regex::new(
         &[
             "aarch64-pc-windows-msvc",
@@ -28,7 +31,7 @@ lazy_static::lazy_static! {
             "ios",
             "none-eabi",
             "nvidia-cuda",
-            "redix",
+            "redox",
             "unknown-none",
             "wasm32",
             "x86_64-fortanix-unknown-sgx",
