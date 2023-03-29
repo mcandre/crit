@@ -50,6 +50,7 @@ For more details on developing tinyrick itself, see [DEVELOPMENT.md](DEVELOPMENT
 
 ## How can I provide more resources to Docker?
 
+* Reserve ~0.5 TB space on the host for Docker images
 * For laptops, ensure host is receiving power from a wall outlet
 * Quit any other resource-intensive applications that may be running
 * Set `CPUs` to the number of (efficiency) cores
