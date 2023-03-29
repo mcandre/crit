@@ -36,6 +36,7 @@ FreeBSD
 
 ## Recommended
 
+* [Docker First Aid Kit](https://github.com/mcandre/docker-first-aid-kit)
 * a host capable of running musl/Linux containers (e.g. a GNU/Linux, musl/Linux, macOS, or Windows host)
 * [ASDF](https://asdf-vm.com/) 0.10 (run `asdf reshim` after each Rust application binary installation)
 * [direnv](https://direnv.net/) 2
@@ -47,21 +48,6 @@ FreeBSD
 # CONTRIBUTING
 
 For more details on developing tinyrick itself, see [DEVELOPMENT.md](DEVELOPMENT.md).
-
-# FAQ
-
-## How can I provide more resources to Docker?
-
-* Reserve ~0.5 TB space on the host for Docker images
-* For laptops, ensure host is receiving power from a wall outlet
-* Quit any other resource-intensive applications that may be running
-* Set `CPUs` to the number of (efficiency) cores
-* Set `Memory` to 8 GB or higher
-* Set `Swap` to 1 GB or higher
-* Set `Virtual disk limit` to 128 GB or higher
-* Remove stale containers listed in `docker ps -a`
-* Remove stale images listed in `docker images`
-* Run `docker system prune -a`
 
 # CREDITS
 
