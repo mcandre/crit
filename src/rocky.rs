@@ -28,6 +28,7 @@ lazy_static::lazy_static! {
             "i686-pc-windows-msvc",
             "nvidia-cuda",
             "unknown-none",
+            "wasm32",
         ].join("|")
     ).unwrap();
 }
