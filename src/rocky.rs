@@ -30,6 +30,7 @@ lazy_static::lazy_static! {
             "i586-pc-windows-msvc",
             "i686-pc-windows-msvc",
             "nvidia-cuda",
+            "riscv32i-unknown-none-elf",
         ].join("|")
     ).unwrap();
 }
