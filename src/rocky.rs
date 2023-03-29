@@ -22,7 +22,7 @@ lazy_static::lazy_static! {
             "ios",
             "fuchsia",
             "aarch64-pc-windows-msvc",
-            "aarch64-unknown-none",
+            "unknown-none",
             "armebv7r-none-eabi",
             "armv7a-none-eabi",
             "armv7r-none-eabi",
@@ -30,7 +30,6 @@ lazy_static::lazy_static! {
             "i586-pc-windows-msvc",
             "i686-pc-windows-msvc",
             "nvidia-cuda",
-            "riscv32i-unknown-none-elf",
         ].join("|")
     ).unwrap();
 }
