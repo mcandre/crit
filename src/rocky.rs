@@ -20,7 +20,7 @@ lazy_static::lazy_static! {
     static ref DEFAULT_TARGET_EXCLUSION_PATTERNS : regex::Regex = regex::Regex::new(
         &[
             "aarch64-pc-windows-msvc",
-            "asmjs-unknown-emscripten",
+            "emscripten",
             "ios",
             "fuchsia",
             "none-eabi",
