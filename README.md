@@ -31,37 +31,19 @@ By default, crit builds in release mode (`-- -r`).
 
 See `crit -h` for more options.
 
-# TIPS
-
-## Custom cross images
-
-To support more targets, you can customize cross images in `Cross.toml`:
-
-```toml
-[target.aarch64-apple-darwin]
-image = "freeznet/aarch64-apple-darwin-cross:11.3"
-
-[target.x86_64-apple-darwin]
-image = "freeznet/x86_64-apple-darwin-cross:11.3"
-
-[target.x86_64-pc-windows-msvc]
-image = "cubejs/rust-cross:x86_64-pc-windows-msvc-03012023"
-```
-
-## Custom build profiles
-
-For smaller binaries, you can enable additional optimizations in `Cargo.toml`.
-
-```toml
-[profile.release]
-codegen-units = 1
-lto = true
-strip = true
-```
-
 # CRATE
 
 https://crates.io/crates/crit
+
+# DOWNLOAD
+
+https://github.com/mcandre/crit/releases
+
+# INSTALL FROM SOURCE
+
+```console
+$ cargo install --path .
+```
 
 # LICENSE
 
