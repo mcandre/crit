@@ -16,6 +16,11 @@ regex = "1.7.3"
 # [lib]
 # name = "rocky"
 
+[profile.release]
+codegen-units = 1
+lto = true
+strip = true
+
 [[bin]]
 name = "rocky"
 path = "src/rocky.rs"
