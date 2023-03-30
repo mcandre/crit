@@ -68,6 +68,10 @@ For faster compilation, you can temporarily disable additional optimizations in 
 # strip = true
 ```
 
+# CRATE
+
+https://crates.io/crates/crit
+
 # LICENSE
 
 FreeBSD
