@@ -59,15 +59,6 @@ lto = true
 strip = true
 ```
 
-For faster compilation, you can temporarily disable additional optimizations in `Cargo.toml`. This may be helpful for accelerating code, test, code, test, ... loops during development.
-
-```toml
-[profile.release]
-# codegen-units = 1
-# lto = true
-# strip = true
-```
-
 # CRATE
 
 https://crates.io/crates/crit
@@ -78,6 +69,7 @@ FreeBSD
 
 # RUNTIME REQUIREMENTS
 
+* [rustup](https://rustup.rs/) 1.25.2+
 * [Rust](https://www.rust-lang.org/en-US/) 1.64+
 * [cross](https://crates.io/crates/cross) 0.2.5+
 * [Docker](https://www.docker.com/) 20.10.23+
