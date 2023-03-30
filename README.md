@@ -1,6 +1,13 @@
-# rocky: Rust cross-compiler
+# crit: Rust cross-compiler
 
-![red rock crab](rocky.png)
+```text
+             .__  __
+  ___________|__|/  |_
+_/ ___\_  __ \  \   __\
+\  \___|  | \/  ||  |
+ \___  >__|  |__||__|
+     \/
+```
 
 # CAUTION
 
@@ -11,18 +18,18 @@ Work in progress.
 ```console
 $ cd example
 
-$ rocky
+$ crit
 
-$ ls .rocky
+$ ls .crit
 aarch64-apple-darwin
 aarch64-linux-android
 aarch64-unknown-linux-gnu
 ...
 ```
 
-By default, rocky builds in release mode (`-- -r`).
+By default, crit builds in release mode (`-- -r`).
 
-See `rocky -h` for more options.
+See `crit -h` for more options.
 
 # LICENSE
 
@@ -47,7 +54,7 @@ FreeBSD
 
 # CONTRIBUTING
 
-For more details on developing tinyrick itself, see [DEVELOPMENT.md](DEVELOPMENT.md).
+For more details on developing crit itself, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 # CREDITS
 

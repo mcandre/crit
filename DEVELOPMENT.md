@@ -20,7 +20,7 @@ $ cargo install
 # UNINSTALL BINARIES
 
 ```console
-$ cargo uninstall rocky
+$ cargo uninstall crit
 ```
 
 # SECURITY AUDIT
@@ -32,6 +32,6 @@ $ cargo audit
 # PORT
 
 ```console
-$ rocky
+$ crit
 ...
 ```

@@ -1,4 +1,4 @@
-//! CLI rocky tool
+//! CLI crit tool
 
 extern crate atomic_option;
 extern crate ctrlc;
@@ -12,7 +12,7 @@ use std::path;
 use std::process;
 use std::sync;
 
-pub static ROCKY_ARTIFACT_ROOT : &str = ".rocky";
+pub static CRIT_ARTIFACT_ROOT : &str = ".crit";
 
 lazy_static::lazy_static! {
     static ref RUSTUP_TARGET_PATTERN : regex::Regex = regex::Regex::new(r"(\S+)").unwrap();
@@ -73,7 +73,7 @@ fn main() {
         process::exit(1);
     }).expect("error registering signal handler");
 
-    let artifact_root : &path::Path = path::Path::new(ROCKY_ARTIFACT_ROOT);
+    let artifact_root : &path::Path = path::Path::new(CRIT_ARTIFACT_ROOT);
     let mut target_exclusion_pattern : regex::Regex = DEFAULT_TARGET_EXCLUSION_PATTERNS.clone();
     let list_targets : bool;
 
@@ -84,7 +84,7 @@ fn main() {
 
 
     let mut opts : getopts::Options = getopts::Options::new();
-    opts.optflag("c", "clean", "delete .rocky artifacts directory");
+    opts.optflag("c", "clean", "delete crit artifacts directory tree");
     opts.optopt("e", "exclude-targets", "exclude targets", "<rust regex>");
     opts.optflag("l", "list-targets", "list enabled targets");
     opts.optflag("h", "help", "print usage info");
@@ -107,7 +107,7 @@ fn main() {
                 process::exit(0);
             } else if optmatches.opt_present("c") {
                 if artifact_root.exists() {
-                    _ = fs::remove_dir_all(ROCKY_ARTIFACT_ROOT).unwrap();
+                    _ = fs::remove_dir_all(CRIT_ARTIFACT_ROOT).unwrap();
                 }
 
                 process::exit(0);

@@ -1,10 +1,10 @@
 [package]
-name = "rocky"
+name = "crit"
 description = "Rust cross-compiler"
 version = "0.0.1"
 authors = ["Andrew Pennebaker <andrew.pennebaker@gmail.com>"]
 license = "BSD-2-Clause"
-homepage = "https://github.com/mcandre/rocky"
+homepage = "https://github.com/mcandre/crit"
 
 [dependencies]
 atomic-option = "0.1.2"
@@ -14,7 +14,7 @@ lazy_static = "1.4.0"
 regex = "1.7.3"
 
 # [lib]
-# name = "rocky"
+# name = "crit"
 
 [profile.release]
 codegen-units = 1
@@ -22,5 +22,5 @@ lto = true
 strip = true
 
 [[bin]]
-name = "rocky"
-path = "src/rocky.rs"
+name = "crit"
+path = "src/crit.rs"
