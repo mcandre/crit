@@ -77,5 +77,7 @@ For more details on developing crit itself, see [DEVELOPMENT.md](DEVELOPMENT.md)
 * [cross-toolchains](https://github.com/cross-rs/cross-toolchains) provisions cross Docker images
 * [cubejs/rust-cross](https://hub.docker.com/r/cubejs/rust-cross/tags) Docker images for additional cross targets
 * [factorio](https://github.com/mcandre/factorio) generates Go application ports based on the standard Go toolchain
-* [freeznet](https://hub.docker.com/u/freeznet) Docker images for additional cross targets
+* [snek](https://github.com/mcandre/snek) ports native C/C++ applications.
 * [tug](https://github.com/mcandre/tug) automates multi-platform Docker image builds
+* [WASM](https://webassembly.org/) provides a portable interface for C/C++ code.
+* [xgo](https://github.com/crazy-max/xgo) supports Go projects with native cgo dependencies.
