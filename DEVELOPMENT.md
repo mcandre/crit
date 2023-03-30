@@ -15,7 +15,7 @@
 # INSTALL BINARIES FROM SOURCE
 
 ```console
-$ cargo install
+$ cargo install --path .
 ```
 
 # UNINSTALL BINARIES
