@@ -86,13 +86,15 @@ fn main() {
                 process::exit(0);
             } else if optmatches.opt_present("c") {
                 if artifact_root.exists() {
-                    _ = fs::remove_dir_all(CRIT_ARTIFACT_ROOT).unwrap();
+                    _ = fs::remove_dir_all(CRIT_ARTIFACT_ROOT)
+                        .expect("error: unable to delete crit artifact root directory");
                 }
 
                 process::exit(0);
             } else if optmatches.opt_present("e") {
                 let ep = optmatches.opt_str("e").unwrap();
-                target_exclusion_pattern = regex::Regex::new(&ep).unwrap();
+                target_exclusion_pattern = regex::Regex::new(&ep)
+                    .expect("error: unable to compile Rust regular expression");
             }
 
             if !optmatches.free.is_empty() {
@@ -106,14 +108,19 @@ fn main() {
         .stdout(process::Stdio::piped())
         .stderr(process::Stdio::piped())
         .output()
-        .unwrap();
+        .expect("error: unable to query rustup for available target triples");
 
     if !rustup_output.status.success() {
-        println!("{}", String::from_utf8(rustup_output.stderr).unwrap());
+        let rustup_stderr : String = String::from_utf8(rustup_output.stderr)
+            .expect("error: unable to read stderr stream from rustup");
+
+        println!("{}", rustup_stderr);
         process::exit(1);
     }
 
-    let rustup_target_text : String = String::from_utf8(rustup_output.stdout).unwrap();
+    let rustup_target_text : String = String::from_utf8(rustup_output.stdout)
+        .expect("error: unable to read stdout stream from rustup");
+
     let mut targets : collections::BTreeMap<&str, bool> = collections::BTreeMap::new();
 
     for line in rustup_target_text.lines() {
@@ -123,9 +130,9 @@ fn main() {
 
         let target : &str = RUSTUP_TARGET_PATTERN
             .captures(line)
-            .unwrap()
+            .expect("error: unable to parse target")
             .get(1)
-            .unwrap()
+            .expect("error: line missing a target in rustup output")
             .as_str();
 
         let enabled : bool = !target_exclusion_pattern.is_match(target);
@@ -171,10 +178,13 @@ fn main() {
                 .stdout(process::Stdio::piped())
                 .stderr(process::Stdio::piped())
                 .output()
-                .unwrap();
+                .expect("error: unable to run cross");
 
         if !cross_output.status.success() {
-            println!("{}", String::from_utf8(cross_output.stderr).unwrap());
+            let cross_stderr : String = String::from_utf8(cross_output.stderr)
+                .expect("error: unable to read stderr stream from cross");
+
+            println!("{}", cross_stderr);
             process::exit(1);
         }
     }
