@@ -160,6 +160,7 @@ fn main() {
         println!("building {}...", target);
 
         let target_dir : &str = &artifact_root
+            .join("cross")
             .join(target)
             .display()
             .to_string();
