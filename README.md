@@ -20,7 +20,7 @@ $ cd example
 
 $ crit
 
-$ ls .crit
+$ ls .crit/cross
 aarch64-apple-darwin
 aarch64-linux-android
 aarch64-unknown-linux-gnu
