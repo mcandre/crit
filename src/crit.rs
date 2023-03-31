@@ -1,6 +1,5 @@
 //! CLI crit tool
 
-extern crate ctrlc;
 extern crate getopts;
 extern crate lazy_static;
 extern crate regex;
@@ -49,15 +48,9 @@ pub fn banner() {
 /// CLI entrypoint
 fn main() {
     let brief = format!("Usage: {} [OPTIONS] [-- <CROSS OPTIONS>]", env!("CARGO_PKG_NAME"));
-
-    ctrlc::set_handler(move || {
-        process::exit(1);
-    }).expect("error registering signal handler");
-
     let artifact_root : &path::Path = path::Path::new(CRIT_ARTIFACT_ROOT);
     let mut target_exclusion_pattern : regex::Regex = DEFAULT_TARGET_EXCLUSION_PATTERNS.clone();
     let list_targets : bool;
-
     let mut rest : Vec<String> = vec!["-r"]
         .iter()
         .map(|e| e.to_string())
@@ -148,12 +141,12 @@ fn main() {
     }
 
     for target in targets {
+        println!("building {}...", target);
+
         let target_dir : &str = &artifact_root
             .join(target)
             .display()
             .to_string();
-
-        println!("building {}...", target);
 
         let cross_output : process::Output = process::Command::new("cross")
                 .args(&["build", "--target-dir", target_dir, "--target", target])
