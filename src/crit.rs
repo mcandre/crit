@@ -163,11 +163,13 @@ fn main() {
         process::exit(1);
     }
 
+    let cross_dir : &path::PathBuf = &artifact_root
+        .join("cross");
+
     for target in targets.keys() {
         println!("building {}...", target);
 
-        let target_dir : &str = &artifact_root
-            .join("cross")
+        let target_dir : &str = &cross_dir
             .join(target)
             .display()
             .to_string();
