@@ -7,7 +7,6 @@ license = "BSD-2-Clause"
 homepage = "https://github.com/mcandre/crit"
 
 [dependencies]
-atomic-option = "0.1.2"
 ctrlc = "3.2.0"
 getopts = "0.2.18"
 lazy_static = "1.4.0"

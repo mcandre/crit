@@ -1,6 +1,5 @@
 //! CLI crit tool
 
-extern crate atomic_option;
 extern crate ctrlc;
 extern crate getopts;
 extern crate lazy_static;
@@ -55,21 +54,8 @@ fn main() {
     let terminating1 : sync::Arc<sync::atomic::AtomicBool> = sync::Arc::new(sync::atomic::AtomicBool::new(false));
     let terminating2 : sync::Arc<sync::atomic::AtomicBool> = terminating1.clone();
 
-    let child1 : sync::Arc<atomic_option::AtomicOption<process::Child>> = sync::Arc::new(atomic_option::AtomicOption::empty());
-    let child2 : sync::Arc<atomic_option::AtomicOption<process::Child>> = child1.clone();
-
     ctrlc::set_handler(move || {
         terminating2.store(true, sync::atomic::Ordering::Relaxed);
-
-        if let Some(mut c) = child2.take(sync::atomic::Ordering::Relaxed) {
-            c
-                .kill()
-                .unwrap();
-            c
-                .wait()
-                .unwrap();
-        }
-
         process::exit(1);
     }).expect("error registering signal handler");
 
@@ -81,7 +67,6 @@ fn main() {
         .iter()
         .map(|e| e.to_string())
         .collect();
-
 
     let mut opts : getopts::Options = getopts::Options::new();
     opts.optflag("c", "clean", "delete crit artifacts directory tree");
@@ -135,9 +120,7 @@ fn main() {
         .spawn()
         .unwrap();
 
-    _ = child1.swap(Box::new(rustup_child), sync::atomic::Ordering::Relaxed);
-    let rustup_box : Box<process::Child> = child1.take(sync::atomic::Ordering::Relaxed).unwrap();
-    let rustup_output : process::Output = rustup_box.wait_with_output().unwrap();
+    let rustup_output : process::Output = rustup_child.wait_with_output().unwrap();
 
     if !rustup_output.status.success() {
         println!("{}", String::from_utf8(rustup_output.stderr).unwrap());
@@ -197,9 +180,7 @@ fn main() {
                 .spawn()
                 .unwrap();
 
-        _ = child1.swap(Box::new(cross_child), sync::atomic::Ordering::Relaxed);
-        let cross_box : Box<process::Child> = child1.take(sync::atomic::Ordering::Relaxed).unwrap();
-        let cross_output : process::Output = cross_box.wait_with_output().unwrap();
+        let cross_output : process::Output = cross_child.wait_with_output().unwrap();
 
         if !cross_output.status.success() {
             println!("{}", String::from_utf8(cross_output.stderr).unwrap());
