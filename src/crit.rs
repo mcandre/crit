@@ -102,10 +102,8 @@ fn main() {
         }
     }
 
-    let mut rustup_command : process::Command = process::Command::new("rustup");
-    rustup_command.args(["target", "list"]);
-
-    let rustup_output : process::Output = rustup_command
+    let rustup_output : process::Output = process::Command::new("rustup")
+        .args(["target", "list"])
         .stdout(process::Stdio::piped())
         .stderr(process::Stdio::piped())
         .output()
@@ -157,15 +155,13 @@ fn main() {
 
         println!("building {}...", target);
 
-        let cross_child : process::Child = process::Command::new("cross")
+        let cross_output : process::Output = process::Command::new("cross")
                 .args(&["build", "--target-dir", target_dir, "--target", target])
                 .args(rest.clone())
                 .stdout(process::Stdio::piped())
                 .stderr(process::Stdio::piped())
-                .spawn()
+                .output()
                 .unwrap();
-
-        let cross_output : process::Output = cross_child.wait_with_output().unwrap();
 
         if !cross_output.status.success() {
             println!("{}", String::from_utf8(cross_output.stderr).unwrap());
