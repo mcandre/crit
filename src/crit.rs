@@ -9,7 +9,6 @@ use std::env;
 use std::fs;
 use std::path;
 use std::process;
-use std::sync;
 
 pub static CRIT_ARTIFACT_ROOT : &str = ".crit";
 
@@ -51,11 +50,7 @@ pub fn banner() {
 fn main() {
     let brief = format!("Usage: {} [OPTIONS] [-- <CROSS OPTIONS>]", env!("CARGO_PKG_NAME"));
 
-    let terminating1 : sync::Arc<sync::atomic::AtomicBool> = sync::Arc::new(sync::atomic::AtomicBool::new(false));
-    let terminating2 : sync::Arc<sync::atomic::AtomicBool> = terminating1.clone();
-
     ctrlc::set_handler(move || {
-        terminating2.store(true, sync::atomic::Ordering::Relaxed);
         process::exit(1);
     }).expect("error registering signal handler");
 
@@ -110,17 +105,11 @@ fn main() {
     let mut rustup_command : process::Command = process::Command::new("rustup");
     rustup_command.args(["target", "list"]);
 
-    if terminating1.load(sync::atomic::Ordering::Relaxed) {
-        process::exit(1);
-    }
-
-    let rustup_child : process::Child = rustup_command
+    let rustup_output : process::Output = rustup_command
         .stdout(process::Stdio::piped())
         .stderr(process::Stdio::piped())
-        .spawn()
+        .output()
         .unwrap();
-
-    let rustup_output : process::Output = rustup_child.wait_with_output().unwrap();
 
     if !rustup_output.status.success() {
         println!("{}", String::from_utf8(rustup_output.stderr).unwrap());
@@ -161,10 +150,6 @@ fn main() {
     }
 
     for target in targets {
-        if terminating1.load(sync::atomic::Ordering::Relaxed) {
-            process::exit(1);
-        }
-
         let target_dir : &str = &artifact_root
             .join(target)
             .display()
