@@ -2,8 +2,12 @@
 
 extern crate getopts;
 extern crate lazy_static;
+extern crate pad;
 extern crate regex;
 
+use pad::PadStr;
+use std::cmp;
+use std::collections;
 use std::env;
 use std::fs;
 use std::path;
@@ -108,7 +112,7 @@ fn main() {
     }
 
     let rustup_target_text : String = String::from_utf8(rustup_output.stdout).unwrap();
-    let mut targets : Vec<&str> = Vec::new();
+    let mut targets : collections::BTreeMap<&str, bool> = collections::BTreeMap::new();
 
     for line in rustup_target_text.lines() {
         if !RUSTUP_TARGET_PATTERN.is_match(line) {
@@ -122,25 +126,35 @@ fn main() {
             .unwrap()
             .as_str();
 
-        if !target_exclusion_pattern.is_match(target) {
-            targets.push(target)
-        }
+        let enabled : bool = !target_exclusion_pattern.is_match(target);
+        targets.insert(target, enabled);
     }
 
     if list_targets {
-        for target in targets {
-            println!("{}", target);
+        let mut max_target_len : usize = 0;
+
+        for target in targets.keys() {
+            let target_len : usize = target.len();
+            max_target_len = cmp::max(max_target_len, target_len);
+        }
+
+        println!("{} {}\n", "TARGET".pad_to_width(max_target_len), "ENABLED");
+
+        for (target, enabled) in targets {
+            println!("{} {}", target.pad_to_width(max_target_len), enabled);
         }
 
         process::exit(0);
     }
+
+    targets.retain(|_, &mut enabled| enabled);
 
     if targets.is_empty() {
         println!("no targets enabled");
         process::exit(1);
     }
 
-    for target in targets {
+    for target in targets.keys() {
         println!("building {}...", target);
 
         let target_dir : &str = &artifact_root
