@@ -85,6 +85,21 @@ Some targets may lack stock support for the Rust `std` library. This is common f
 * Avoid using the `std` library, in both your code, as well as the dependency tree. This is actually common practice for many Rust projects, as an proactive stance on embedded development support.
 * Disable undesired targets.
 
+## Help, cross-compilation is slow?
+
+Yes, it is. The Rust compiler is notoriously analytical, often taking a long time to compile a single target. When cross-compiling multiple targets, that time multiplies by the number of targets.
+
+Some cross-compilation performance tips:
+
+* Tune your Docker setup (see the Docker First Aid Kit above)
+* Temporarily disable common Cargo build profile options (`codegen-units`, `lto`, `strip`, etc.)
+* Use debug mode (e.g., `--`)
+* Use fewer dependencies
+* Keep the host awake (see Amphetamine / The Caffeine / Caffeine above)
+* Reserve cross-compilation as a release-time step, distinct from more rapid development tasks
+* Perform cross-compilation in a CI/CD pipeline with more CPU, disk, and RAM resources
+* Exclude more targets (e.g., `-e <target pattern>`)
+
 # CREDITS
 
 * [cross](https://github.com/cross-rs/cross) underlying cross-compiler system

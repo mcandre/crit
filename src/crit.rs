@@ -97,7 +97,7 @@ fn main() {
                     .expect("error: unable to compile Rust regular expression");
             }
 
-            if !optmatches.free.is_empty() {
+            if arguments.contains(&"--".to_string()) {
                 rest = optmatches.free;
             }
         }
