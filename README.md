@@ -52,7 +52,7 @@ FreeBSD
 # RUNTIME REQUIREMENTS
 
 * [rustup](https://rustup.rs/) 1.25.2+
-* [Rust](https://www.rust-lang.org/en-US/) 1.64+
+* [Rust](https://www.rust-lang.org/en-US/) 1.68.2+
 * [cross](https://crates.io/crates/cross) 0.2.5+
 * [Docker](https://www.docker.com/) 20.10.23+
 
@@ -70,6 +70,20 @@ FreeBSD
 # CONTRIBUTING
 
 For more details on developing crit itself, see [DEVELOPMENT.md](DEVELOPMENT.md).
+
+# FAQ
+
+## Help, some targets are broken?
+
+First, check that your project is able to build with conventional `cross` or `cargo` commands. A project which does not compile, will naturally have difficulty cross-compiling.
+
+Note that Rust introduces new, under-supported targets all the time. We try to keep up, but sometimes we miss a few of these. Regardless, you can declare which targets are disabled, by writing a custom pattern for the `-e` / `--exclude-targets` flag.
+
+Some targets may lack stock support for the Rust `std` library. This is common for bare metal or embedded targets. For these kinds of targets, you have several strategies for resolution:
+
+* Provide a `std` implementation. Reach out to specialists for the specific target involved.
+* Avoid using the `std` library, in both your code, as well as the dependency tree. This is actually common practice for many Rust projects, as an proactive stance on embedded development support.
+* Disable undesired targets.
 
 # CREDITS
 

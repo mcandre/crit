@@ -23,6 +23,7 @@ lazy_static::lazy_static! {
     /// or targets without community supported cross images.
     static ref DEFAULT_TARGET_EXCLUSION_PATTERNS : regex::Regex = regex::Regex::new(
         &[
+            "android",
             "cuda",
             "emscripten",
             "fortanix",
@@ -33,6 +34,7 @@ lazy_static::lazy_static! {
             "none-eabi",
             "pc-solaris",
             "redox",
+            "uefi",
             "unknown-none",
             "wasm",
         ].join("|")
