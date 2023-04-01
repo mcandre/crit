@@ -69,6 +69,21 @@ pub fn version() {
     println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 }
 
+/// Render target table
+pub fn list(targets : collections::BTreeMap<&str, bool>) {
+    let max_target_len : usize = targets
+        .keys()
+        .map(|e| e.len())
+        .max()
+        .expect("error: all targets blank");
+
+    println!("{} {}\n", "TARGET".pad_to_width(max_target_len), "ENABLED");
+
+    for (target, enabled) in targets {
+        println!("{} {}", target.pad_to_width(max_target_len), enabled);
+    }
+}
+
 /// CLI entrypoint
 fn main() {
     let brief = format!("Usage: {} [OPTIONS] [-- <CROSS OPTIONS>]", env!("CARGO_PKG_NAME"));
@@ -193,18 +208,7 @@ fn main() {
         .collect();
 
     if list_targets {
-        let max_target_len : usize = targets
-            .keys()
-            .map(|e| e.len())
-            .max()
-            .expect("error: all targets blank");
-
-        println!("{} {}\n", "TARGET".pad_to_width(max_target_len), "ENABLED");
-
-        for (target, enabled) in targets {
-            println!("{} {}", target.pad_to_width(max_target_len), enabled);
-        }
-
+        list(targets);
         process::exit(0);
     }
 
