@@ -9,6 +9,10 @@ _/ ___\_  __ \  \   __\
      \/
 ```
 
+# SUMMARY
+
+`crit` compiles Rust application ports for many different target platforms. This effort is based on conventional Rust tooling, including `cross`, `cargo`, and the amazing `rustc` compiler.
+
 # EXAMPLE
 
 ```console
