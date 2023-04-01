@@ -35,6 +35,6 @@ $ cargo audit
 # PORT
 
 ```console
-$ crit -b crit-0.0.4
-$ sh -c "cd .crit/bin && zip -r crit-0.0.4.zip crit-0.0.4"
+$ crit -b crit-0.0.5
+$ sh -c "cd .crit/bin && zip -r crit-0.0.5.zip crit-0.0.5"
 ```
