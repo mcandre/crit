@@ -118,11 +118,11 @@ pub fn list(targets : collections::BTreeMap<String, bool>) {
 }
 
 pub struct TargetConfig<'a> {
-    cross_dir_pathbuf : &'a path::PathBuf,
-    bin_dir_pathbuf : &'a path::PathBuf,
-    target : &'a str,
-    cross_args : &'a Vec<String>,
-    applications: &'a Vec<&'a str>,
+    pub cross_dir_pathbuf : &'a path::PathBuf,
+    pub bin_dir_pathbuf : &'a path::PathBuf,
+    pub target : &'a str,
+    pub cross_args : &'a Vec<String>,
+    pub applications: &'a Vec<&'a str>,
 }
 
 impl TargetConfig<'_> {
