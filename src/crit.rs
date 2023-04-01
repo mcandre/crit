@@ -117,7 +117,7 @@ pub fn list(targets : collections::BTreeMap<String, bool>) {
     }
 }
 
-struct TargetConfig<'a> {
+pub struct TargetConfig<'a> {
     cross_dir_pathbuf : &'a path::PathBuf,
     bin_dir_pathbuf : &'a path::PathBuf,
     target : &'a str,

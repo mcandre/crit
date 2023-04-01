@@ -35,7 +35,7 @@ $ cargo audit
 # TEST
 
 ```console
-$ sh -c "cd example && time crit --"
+$ crit -l
 ```
 
 # PORT
