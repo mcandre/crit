@@ -63,12 +63,12 @@ lazy_static::lazy_static! {
 
 // Show short CLI spec
 fn usage(brief : &str, opts : &getopts::Options) {
-    println!("{}", (*opts).usage(brief));
+    eprintln!("{}", (*opts).usage(brief));
 }
 
 /// Show version information
 pub fn version() {
-    println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+    eprintln!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 }
 
 pub fn get_targets(target_exclusion_pattern : regex::Regex) -> Result<collections::BTreeMap<String, bool>, String> {
@@ -326,7 +326,7 @@ fn main() {
             applications: &applications,
         };
 
-        println!("building {}...", target);
+        eprintln!("building {}...", target);
 
         if let Err(err) = target_config.build() {
             eprintln!("{}", err);
