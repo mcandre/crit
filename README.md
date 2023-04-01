@@ -63,6 +63,7 @@ FreeBSD
 * [ASDF](https://asdf-vm.com/) 0.10 (run `asdf reshim` after each Rust application binary installation)
 * [direnv](https://direnv.net/) 2
 * [cargo-cache](https://crates.io/crates/cargo-cache)
+* [tar](https://en.wikipedia.org/wiki/Tar_(computing)) / [zip](https://en.wikipedia.org/wiki/ZIP_(file_format))
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
 * GNU compatible [time](https://www.gnu.org/software/time/)
 * [Amphetamine](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12) (macOS), [The Caffeine](https://www.microsoft.com/store/productId/9PJBW5SCH9LC) (Windows), [Caffeine](https://launchpad.net/caffeine) (Linux) can prevent hibernation during any long builds
@@ -75,7 +76,7 @@ For more details on developing crit itself, see [DEVELOPMENT.md](DEVELOPMENT.md)
 
 ## Help, some targets are broken?
 
-First, check that your project is able to build with conventional `cross` or `cargo` commands. A project which does not compile, will naturally have difficulty cross-compiling.
+Check that your project is able to build with conventional `cross` or `cargo` commands against a single target. A project that does not compile against a single target, will naturally have difficulty when attempting to cross-compile for multiple targets.
 
 Note that Rust introduces new, under-supported targets all the time. We try to keep up, but sometimes we miss a few of these. Regardless, you can declare which targets are disabled, by writing a custom pattern for the `-e` / `--exclude-targets` flag.
 
@@ -85,9 +86,20 @@ Some targets may lack stock support for the Rust `std` library. This is common f
 * Avoid using the `std` library, in both your code, as well as the dependency tree. This is actually common practice for many Rust projects, as an proactive stance on embedded development support.
 * Disable undesired targets.
 
+## Help, cross-compilation appears frozen?
+
+crit hides a lot of compiler noise. While a target is building, you can use common Docker commands to inspect the compilation process:
+
+* `docker ps -a`
+* `docker logs [--follow] <container id>`
+
 ## Help, cross-compilation is slow?
 
-Yes, it is. The Rust compiler is notoriously analytical, often taking a long time to compile a single target. When cross-compiling multiple targets, that time multiplies by the number of targets.
+Yes, it sure is! Almost as slow as using Virtual Machines for cross-compilation.
+
+Rustaceans come to expect that the Rust compiler is analytical, spending more time optimizing programs, so that the final binaries will run safer and faster. The Rust compiler often taking a long time to compile each individual target.
+
+Naturally, when cross-compiling multiple targets, that time multiplies by the number of targets.
 
 Some cross-compilation performance tips:
 
@@ -95,6 +107,7 @@ Some cross-compilation performance tips:
 * Temporarily disable common Cargo build profile options (`codegen-units`, `lto`, `strip`, etc.)
 * Use debug mode (e.g., `--`)
 * Use fewer dependencies
+* Design with the [UNIX Philosophy](https://en.wikipedia.org/wiki/Unix_philosophy), namely *Make each program do one thing well.* Not a hundred features poorly.
 * Keep the host awake (see Amphetamine / The Caffeine / Caffeine above)
 * Reserve cross-compilation as a release-time step, distinct from more rapid development tasks
 * Perform cross-compilation in a CI/CD pipeline with more CPU, disk, and RAM resources

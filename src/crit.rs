@@ -66,7 +66,7 @@ fn usage(brief : &str, opts : &getopts::Options) {
 }
 
 /// Show version information
-pub fn banner() {
+pub fn version() {
     println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 }
 
@@ -74,6 +74,7 @@ pub fn banner() {
 fn main() {
     let brief = format!("Usage: {} [OPTIONS] [-- <CROSS OPTIONS>]", env!("CARGO_PKG_NAME"));
     let artifact_root : &path::Path = path::Path::new(CRIT_ARTIFACT_ROOT);
+    let mut banner : String = "".to_string();
     let mut target_exclusion_pattern : regex::Regex = DEFAULT_TARGET_EXCLUSION_PATTERNS.clone();
     let list_targets : bool;
 
@@ -84,6 +85,7 @@ fn main() {
 
     let mut opts : getopts::Options = getopts::Options::new();
     opts.optflag("c", "clean", "delete crit artifacts directory tree");
+    opts.optopt("b", "banner", "nest artifacts with a further subdirectory label", "<dir>");
     opts.optopt("e", "exclude-targets", "exclude targets", "<rust regex>");
     opts.optflag("l", "list-targets", "list enabled targets");
     opts.optflag("h", "help", "print usage info");
@@ -103,7 +105,7 @@ fn main() {
                 usage(&brief, &opts);
                 process::exit(0);
             } else if optmatches.opt_present("v") {
-                banner();
+                version();
                 process::exit(0);
             } else if optmatches.opt_present("c") {
                 if artifact_root.exists() {
@@ -112,9 +114,12 @@ fn main() {
                 }
 
                 process::exit(0);
+            } else if optmatches.opt_present("b") {
+                banner = optmatches.opt_str("b")
+                    .expect("error: missing value for banner flag");
             } else if optmatches.opt_present("e") {
                 let ep = optmatches.opt_str("e")
-                    .expect("error: missing exclusion pattern flag value");
+                    .expect("error: missing value for exclusion flag");
 
                 target_exclusion_pattern = regex::Regex::new(&ep)
                     .expect("error: unable to compile Rust regular expression");
@@ -210,10 +215,14 @@ fn main() {
         process::exit(1);
     }
 
-    let bin_dir : &path::PathBuf = &artifact_root.join("bin");
+    let mut bin_dir : path::PathBuf = artifact_root.join("bin");
+
+    if banner != "" {
+        bin_dir = bin_dir.join(banner);
+    }
 
     // cross automatically creates its --target-dir paths
-    let cross_dir : &path::PathBuf = &artifact_root.join("cross");
+    let cross_dir : path::PathBuf = artifact_root.join("cross");
 
     for target in targets.keys() {
         println!("building {}...", target);
