@@ -7,7 +7,6 @@ extern crate regex;
 extern crate toml;
 
 use pad::PadStr;
-use std::cmp;
 use std::collections;
 use std::env;
 use std::fs;
@@ -194,11 +193,11 @@ fn main() {
         .collect();
 
     if list_targets {
-        let mut max_target_len : usize = 0;
-
-        for target in targets.keys() {
-            max_target_len = cmp::max(max_target_len, target.len());
-        }
+        let max_target_len : usize = targets
+            .keys()
+            .map(|e| e.len())
+            .max()
+            .expect("error: all targets blank");
 
         println!("{} {}\n", "TARGET".pad_to_width(max_target_len), "ENABLED");
 
