@@ -1,6 +1,6 @@
 [package]
-name = "hello"
-description = "Hello World"
+name = "demo"
+description = "Demo applications"
 version = "0.0.1"
 authors = ["Andrew Pennebaker <andrew.pennebaker@gmail.com>"]
 license = "BSD-2-Clause"
@@ -8,3 +8,7 @@ license = "BSD-2-Clause"
 [[bin]]
 name = "hello"
 path = "src/hello.rs"
+
+[[bin]]
+name = "fizzbuzz"
+path = "src/fizzbuzz.rs"

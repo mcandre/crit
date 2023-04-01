@@ -4,6 +4,7 @@ extern crate getopts;
 extern crate lazy_static;
 extern crate pad;
 extern crate regex;
+extern crate toml;
 
 use pad::PadStr;
 use std::cmp;
@@ -39,6 +40,24 @@ lazy_static::lazy_static! {
             "wasm",
         ].join("|")
     ).unwrap();
+
+    static ref BUILD_MODES : Vec<String> = vec![
+        "debug",
+        "release",
+    ]
+        .iter()
+        .map(|e| e.to_string())
+        .collect();
+
+    static ref BINARY_FILE_EXTENSIONS : Vec<String> = vec![
+        "",
+        "exe",
+        "js",
+        "wasm",
+    ]
+        .iter()
+        .map(|e| e.to_string())
+        .collect();
 }
 
 // Show short CLI spec
@@ -57,6 +76,7 @@ fn main() {
     let artifact_root : &path::Path = path::Path::new(CRIT_ARTIFACT_ROOT);
     let mut target_exclusion_pattern : regex::Regex = DEFAULT_TARGET_EXCLUSION_PATTERNS.clone();
     let list_targets : bool;
+
     let mut rest : Vec<String> = vec!["-r"]
         .iter()
         .map(|e| e.to_string())
@@ -68,6 +88,7 @@ fn main() {
     opts.optflag("l", "list-targets", "list enabled targets");
     opts.optflag("h", "help", "print usage info");
     opts.optflag("v", "version", "print version info");
+
     let arguments : Vec<String> = env::args().collect();
 
     match opts.parse(&arguments[1..]) {
@@ -92,7 +113,9 @@ fn main() {
 
                 process::exit(0);
             } else if optmatches.opt_present("e") {
-                let ep = optmatches.opt_str("e").unwrap();
+                let ep = optmatches.opt_str("e")
+                    .expect("error: missing exclusion pattern flag value");
+
                 target_exclusion_pattern = regex::Regex::new(&ep)
                     .expect("error: unable to compile Rust regular expression");
             }
@@ -101,6 +124,30 @@ fn main() {
                 rest = optmatches.free;
             }
         }
+    }
+
+    let cargo_str : String = fs::read_to_string("Cargo.toml")
+        .expect("error: unable to read Cargo.toml");
+
+    let cargo_table : toml::Table = cargo_str.parse::<toml::Table>()
+        .expect("error: unable to parse Cargo.toml");
+
+    let bin_tables : &Vec<toml::Value> = cargo_table["bin"]
+        .as_array()
+        .expect("error: unable to retrieve bin sections from Cargo.toml");
+
+    let mut applications : Vec<&str> = Vec::new();
+
+    for bin_table in bin_tables {
+        let application : &str = bin_table["name"]
+            .as_str()
+            .expect("error: Cargo.toml binary missing name field");
+
+        applications.push(application);
+    }
+
+    if applications.is_empty() {
+        eprintln!("error: no binaries declared in Cargo.toml")
     }
 
     let rustup_output : process::Output = process::Command::new("rustup")
@@ -114,7 +161,7 @@ fn main() {
         let rustup_stderr : String = String::from_utf8(rustup_output.stderr)
             .expect("error: unable to read stderr stream from rustup");
 
-        println!("{}", rustup_stderr);
+        eprintln!("{}", rustup_stderr);
         process::exit(1);
     }
 
@@ -159,18 +206,21 @@ fn main() {
     targets.retain(|_, &mut enabled| enabled);
 
     if targets.is_empty() {
-        println!("no targets enabled");
+        eprintln!("error: no targets enabled");
         process::exit(1);
     }
 
-    let cross_dir : &path::PathBuf = &artifact_root
-        .join("cross");
+    let bin_dir : &path::PathBuf = &artifact_root.join("bin");
+
+    // cross automatically creates its --target-dir paths
+    let cross_dir : &path::PathBuf = &artifact_root.join("cross");
 
     for target in targets.keys() {
         println!("building {}...", target);
 
-        let target_dir : &str = &cross_dir
-            .join(target)
+        let target_dir_pathbuf : path::PathBuf = cross_dir
+            .join(target);
+        let target_dir : &str = &target_dir_pathbuf
             .display()
             .to_string();
 
@@ -186,8 +236,47 @@ fn main() {
             let cross_stderr : String = String::from_utf8(cross_output.stderr)
                 .expect("error: unable to read stderr stream from cross");
 
-            println!("{}", cross_stderr);
+            eprintln!("{}", cross_stderr);
             process::exit(1);
+        }
+
+        for mode in BUILD_MODES.iter() {
+            for application in &applications {
+                let application_dir_pathbuf : path::PathBuf = bin_dir
+                    .join(target);
+
+                let application_dir : &str = &application_dir_pathbuf
+                    .display()
+                    .to_string();
+
+                _ = fs::create_dir_all(application_dir)
+                    .expect("error: unable to create bin directory");
+
+                for extension in BINARY_FILE_EXTENSIONS.iter() {
+                    let mut application_source_pathbuf : path::PathBuf = target_dir_pathbuf
+                        .join(target)
+                        .join(mode)
+                        .join(application);
+                    application_source_pathbuf.set_extension(extension);
+
+                    if application_source_pathbuf.exists() {
+                        let application_source_path : &str = &application_source_pathbuf
+                            .display()
+                            .to_string();
+
+                        let mut application_destination_pathbuf : path::PathBuf = application_dir_pathbuf
+                            .join(application);
+                        application_destination_pathbuf.set_extension(extension);
+
+                        let application_destination_path : &str = &application_destination_pathbuf
+                            .display()
+                            .to_string();
+
+                        _ = fs::copy(application_source_path, application_destination_path)
+                            .expect("error: unable to copy binary");
+                    }
+                }
+            }
         }
     }
 }

@@ -11,6 +11,7 @@ getopts = "0.2.18"
 lazy_static = "1.4.0"
 pad = "0.1.6"
 regex = "1.7.3"
+toml = "0.7.3"
 
 # [lib]
 # name = "crit"

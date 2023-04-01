@@ -20,10 +20,10 @@ $ cd example
 
 $ crit
 
-$ ls .crit/cross
+$ ls .crit/bin
 aarch64-apple-darwin
-aarch64-linux-android
 aarch64-unknown-linux-gnu
+aarch64-unknown-linux-musl
 ...
 ```
 
@@ -42,7 +42,7 @@ https://github.com/mcandre/crit/releases
 # INSTALL FROM SOURCE
 
 ```console
-$ cargo install --path .
+$ cargo install --bins --path .
 ```
 
 # LICENSE
