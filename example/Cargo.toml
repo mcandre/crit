@@ -8,7 +8,3 @@ license = "BSD-2-Clause"
 [[bin]]
 name = "hello"
 path = "src/hello.rs"
-
-[[bin]]
-name = "fizzbuzz"
-path = "src/fizzbuzz.rs"

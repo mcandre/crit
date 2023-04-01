@@ -5,14 +5,6 @@
 ```console
 $ hello
 Hello World!
-
-$ fizzbuzz
-1
-2
-Fizz
-4
-Buzz
-...
 ```
 
 # REQUIREMENTS

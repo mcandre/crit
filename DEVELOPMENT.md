@@ -32,6 +32,12 @@ $ cargo uninstall crit
 $ cargo audit
 ```
 
+# TEST
+
+```console
+$ sh -c "cd example && time crit --"
+```
+
 # PORT
 
 ```console
