@@ -9,10 +9,6 @@ _/ ___\_  __ \  \   __\
      \/
 ```
 
-# CAUTION
-
-Work in progress.
-
 # EXAMPLE
 
 ```console
