@@ -69,8 +69,39 @@ pub fn version() {
     println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 }
 
+pub fn get_targets(target_exclusion_pattern : regex::Regex) -> Result<collections::BTreeMap<String, bool>, String> {
+    return process::Command::new("rustup")
+        .args(["target", "list"])
+        .stdout(process::Stdio::piped())
+        .stderr(process::Stdio::piped())
+        .output()
+        .map_err(|_| "unable to run rustup".to_string())
+        .and_then(|output|
+            match output.status.success() {
+                // work around rustup writing error messages to stdout
+                false => Err("unable to query rustup target list".to_string()),
+                _ => String::from_utf8(output.stdout)
+                    .map_err(|_| "unable to decode rustup stdout stream".to_string()),
+            }
+        )
+        .map(|text|
+            text
+                .lines()
+                .filter(|line| RUSTUP_TARGET_PATTERN.is_match(line))
+                .map(|line|
+                    RUSTUP_TARGET_PATTERN
+                        .captures(line)
+                        .and_then(|e| e.get(1))
+                        .map(|e| e.as_str())
+                        .unwrap()
+                )
+                .map(|target| (target.to_string(), !target_exclusion_pattern.is_match(target)))
+                .collect()
+        );
+}
+
 /// Render target table
-pub fn list(targets : collections::BTreeMap<&str, bool>) {
+pub fn list(targets : collections::BTreeMap<String, bool>) {
     let max_target_len : usize = targets
         .keys()
         .map(|e| e.len())
@@ -175,37 +206,14 @@ fn main() {
         eprintln!("error: no binaries declared in Cargo.toml")
     }
 
-    let rustup_output : process::Output = process::Command::new("rustup")
-        .args(["target", "list"])
-        .stdout(process::Stdio::piped())
-        .stderr(process::Stdio::piped())
-        .output()
-        .expect("error: unable to query rustup for available target triples");
+    let targets_result : Result<collections::BTreeMap<String, bool>, String> = get_targets(target_exclusion_pattern);
 
-    if !rustup_output.status.success() {
-        let rustup_stderr : String = String::from_utf8(rustup_output.stderr)
-            .expect("error: unable to read stderr stream from rustup");
-
-        eprintln!("{}", rustup_stderr);
+    if let Err(err) = targets_result {
+        eprintln!("{}", err);
         process::exit(1);
     }
 
-    let rustup_target_text : String = String::from_utf8(rustup_output.stdout)
-        .expect("error: unable to read stdout stream from rustup");
-
-    let targets : collections::BTreeMap<&str, bool> = rustup_target_text
-        .lines()
-        .filter(|line| RUSTUP_TARGET_PATTERN.is_match(line))
-        .map(|line|
-            RUSTUP_TARGET_PATTERN
-                .captures(line)
-                .expect("error: unable to parse target")
-                .get(1)
-                .expect("error: line missing a target in rustup output")
-                .as_str()
-        )
-        .map(|target| (target, !target_exclusion_pattern.is_match(target)))
-        .collect();
+    let targets : collections::BTreeMap<String, bool> = targets_result.unwrap();
 
     if list_targets {
         list(targets);
@@ -215,7 +223,7 @@ fn main() {
     let enabled_targets : Vec<&str> = targets
         .iter()
         .filter(|(_, &enabled)| enabled)
-        .map(|(&target, _)| target)
+        .map(|(target, _)| target as &str)
         .collect();
 
     if enabled_targets.is_empty() {
