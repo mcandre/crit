@@ -9,9 +9,11 @@ extern crate toml;
 use pad::PadStr;
 use std::collections;
 use std::env;
+use std::io;
 use std::fs;
 use std::path;
 use std::process;
+use std::string;
 
 pub static CRIT_ARTIFACT_ROOT : &str = ".crit";
 
@@ -115,6 +117,90 @@ pub fn list(targets : collections::BTreeMap<String, bool>) {
     }
 }
 
+struct TargetConfig<'a> {
+    cross_dir_pathbuf : &'a path::PathBuf,
+    bin_dir_pathbuf : &'a path::PathBuf,
+    target : &'a str,
+    cross_args : &'a Vec<String>,
+    applications: &'a Vec<&'a str>,
+}
+
+impl TargetConfig<'_> {
+    fn build(&self) -> Result<(), String> {
+        let target_dir_pathbuf : path::PathBuf = self.cross_dir_pathbuf
+            .join(&self.target);
+        let target_dir_str : &str = &target_dir_pathbuf
+            .display()
+            .to_string();
+
+        let cross_output_result : Result<process::Output, io::Error> = process::Command::new("cross")
+                .args(&["build", "--target-dir", target_dir_str, "--target", &self.target])
+                .args(self.cross_args.clone())
+                .stdout(process::Stdio::piped())
+                .stderr(process::Stdio::piped())
+                .output();
+
+        if let Err(_) = cross_output_result {
+            return Err("unable to run cross".to_string());
+        }
+
+        let cross_output : process::Output = cross_output_result.unwrap();
+
+        if !cross_output.status.success() {
+            let cross_stderr_result : Result<String, string::FromUtf8Error> = String::from_utf8(cross_output.stderr);
+
+            if let Err(_) = cross_stderr_result {
+                return Err("unable to decode cross stderr stream".to_string());
+            }
+
+            return Err(cross_stderr_result.unwrap());
+        }
+
+        for application in self.applications {
+            let dest_dir_pathbuf : path::PathBuf = self.bin_dir_pathbuf
+                .join(&self.target);
+
+            let dest_dir_str : &str = &dest_dir_pathbuf
+                .display()
+                .to_string();
+
+            if let Err(_) = fs::create_dir_all(dest_dir_str) {
+                return Err("unable to create bin directory".to_string());
+            }
+
+            for extension in BINARY_FILE_EXTENSIONS.iter() {
+                for mode in BUILD_MODES.iter() {
+                    let mut source_pathbuf : path::PathBuf = target_dir_pathbuf
+                        .join(&self.target)
+                        .join(mode)
+                        .join(application);
+                    source_pathbuf.set_extension(extension);
+
+                    if source_pathbuf.exists() {
+                        let source_str : &str = &source_pathbuf
+                            .display()
+                            .to_string();
+
+                        let mut dest_pathbuf : path::PathBuf = dest_dir_pathbuf
+                            .join(application);
+                        dest_pathbuf.set_extension(extension);
+
+                        let dest_str : &str = &dest_pathbuf
+                            .display()
+                            .to_string();
+
+                        if let Err(_) = fs::copy(source_str, dest_str) {
+                            return Err("unable to copy binary".to_string());
+                        }
+                    }
+                }
+            }
+        }
+
+        return Ok(())
+    }
+}
+
 /// CLI entrypoint
 fn main() {
     let brief = format!("Usage: {} [OPTIONS] [-- <CROSS OPTIONS>]", env!("CARGO_PKG_NAME"));
@@ -126,7 +212,7 @@ fn main() {
     let mut banner : String = "".to_string();
     let mut bin_dir_pathbuf : path::PathBuf = artifact_root_path.join("bin");
     let mut target_exclusion_pattern : regex::Regex = DEFAULT_TARGET_EXCLUSION_PATTERNS.clone();
-    let mut rest : Vec<String> = vec!["-r"]
+    let mut cross_args : Vec<String> = vec!["-r"]
         .iter()
         .map(|e| e.to_string())
         .collect();
@@ -174,7 +260,7 @@ fn main() {
             }
 
             if arguments.contains(&"--".to_string()) {
-                rest = optmatches.free;
+                cross_args = optmatches.free;
             }
         }
     }
@@ -232,67 +318,19 @@ fn main() {
     }
 
     for target in enabled_targets {
+        let target_config : TargetConfig = TargetConfig{
+            cross_dir_pathbuf: &cross_dir_pathbuf,
+            bin_dir_pathbuf: &bin_dir_pathbuf,
+            target: target,
+            cross_args: &cross_args,
+            applications: &applications,
+        };
+
         println!("building {}...", target);
 
-        let target_dir_pathbuf : path::PathBuf = cross_dir_pathbuf
-            .join(target);
-        let target_dir_str : &str = &target_dir_pathbuf
-            .display()
-            .to_string();
-
-        let cross_output : process::Output = process::Command::new("cross")
-                .args(&["build", "--target-dir", target_dir_str, "--target", target])
-                .args(rest.clone())
-                .stdout(process::Stdio::piped())
-                .stderr(process::Stdio::piped())
-                .output()
-                .expect("error: unable to run cross");
-
-        if !cross_output.status.success() {
-            let cross_stderr : String = String::from_utf8(cross_output.stderr)
-                .expect("error: unable to read stderr stream from cross");
-
-            eprintln!("{}", cross_stderr);
+        if let Err(err) = target_config.build() {
+            eprintln!("{}", err);
             process::exit(1);
-        }
-
-        for application in &applications {
-            let dest_dir_pathbuf : path::PathBuf = bin_dir_pathbuf
-                .join(target);
-
-            let dest_dir_str : &str = &dest_dir_pathbuf
-                .display()
-                .to_string();
-
-            _ = fs::create_dir_all(dest_dir_str)
-                .expect("error: unable to create bin directory");
-
-            for extension in BINARY_FILE_EXTENSIONS.iter() {
-                for mode in BUILD_MODES.iter() {
-                    let mut source_pathbuf : path::PathBuf = target_dir_pathbuf
-                        .join(target)
-                        .join(mode)
-                        .join(application);
-                    source_pathbuf.set_extension(extension);
-
-                    if source_pathbuf.exists() {
-                        let source_str : &str = &source_pathbuf
-                            .display()
-                            .to_string();
-
-                        let mut dest_pathbuf : path::PathBuf = dest_dir_pathbuf
-                            .join(application);
-                        dest_pathbuf.set_extension(extension);
-
-                        let dest_str : &str = &dest_pathbuf
-                            .display()
-                            .to_string();
-
-                        _ = fs::copy(source_str, dest_str)
-                            .expect("error: unable to copy binary");
-                    }
-                }
-            }
         }
     }
 }
