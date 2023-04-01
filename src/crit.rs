@@ -73,11 +73,14 @@ pub fn version() {
 /// CLI entrypoint
 fn main() {
     let brief = format!("Usage: {} [OPTIONS] [-- <CROSS OPTIONS>]", env!("CARGO_PKG_NAME"));
-    let artifact_root : &path::Path = path::Path::new(CRIT_ARTIFACT_ROOT);
-    let mut banner : String = "".to_string();
-    let mut target_exclusion_pattern : regex::Regex = DEFAULT_TARGET_EXCLUSION_PATTERNS.clone();
-    let list_targets : bool;
 
+    let artifact_root_path : &path::Path = path::Path::new(CRIT_ARTIFACT_ROOT);
+    let cross_dir_pathbuf : path::PathBuf = artifact_root_path.join("cross");
+
+    let mut list_targets : bool = false;
+    let mut banner : String = "".to_string();
+    let mut bin_dir_pathbuf : path::PathBuf = artifact_root_path.join("bin");
+    let mut target_exclusion_pattern : regex::Regex = DEFAULT_TARGET_EXCLUSION_PATTERNS.clone();
     let mut rest : Vec<String> = vec!["-r"]
         .iter()
         .map(|e| e.to_string())
@@ -99,16 +102,16 @@ fn main() {
             process::exit(1);
         },
         Ok(optmatches) => {
-            list_targets = optmatches.opt_present("l");
-
             if optmatches.opt_present("h") {
                 usage(&brief, &opts);
                 process::exit(0);
             } else if optmatches.opt_present("v") {
                 version();
                 process::exit(0);
+            } else if optmatches.opt_present("l") {
+                list_targets = true;
             } else if optmatches.opt_present("c") {
-                if artifact_root.exists() {
+                if artifact_root_path.exists() {
                     _ = fs::remove_dir_all(CRIT_ARTIFACT_ROOT)
                         .expect("error: unable to delete crit artifact root directory");
                 }
@@ -131,6 +134,10 @@ fn main() {
         }
     }
 
+    if banner != "" {
+        bin_dir_pathbuf = bin_dir_pathbuf.join(banner);
+    }
+
     let cargo_str : String = fs::read_to_string("Cargo.toml")
         .expect("error: unable to read Cargo.toml");
 
@@ -141,15 +148,14 @@ fn main() {
         .as_array()
         .expect("error: unable to retrieve bin sections from Cargo.toml");
 
-    let mut applications : Vec<&str> = Vec::new();
-
-    for bin_table in bin_tables {
-        let application : &str = bin_table["name"]
-            .as_str()
-            .expect("error: Cargo.toml binary missing name field");
-
-        applications.push(application);
-    }
+    let applications : Vec<&str> = bin_tables
+        .iter()
+        .map(|e|
+            e["name"]
+                .as_str()
+                .expect("error: Cargo.toml binary missing name field")
+        )
+        .collect();
 
     if applications.is_empty() {
         eprintln!("error: no binaries declared in Cargo.toml")
@@ -173,30 +179,25 @@ fn main() {
     let rustup_target_text : String = String::from_utf8(rustup_output.stdout)
         .expect("error: unable to read stdout stream from rustup");
 
-    let mut targets : collections::BTreeMap<&str, bool> = collections::BTreeMap::new();
-
-    for line in rustup_target_text.lines() {
-        if !RUSTUP_TARGET_PATTERN.is_match(line) {
-            continue
-        }
-
-        let target : &str = RUSTUP_TARGET_PATTERN
-            .captures(line)
-            .expect("error: unable to parse target")
-            .get(1)
-            .expect("error: line missing a target in rustup output")
-            .as_str();
-
-        let enabled : bool = !target_exclusion_pattern.is_match(target);
-        targets.insert(target, enabled);
-    }
+    let targets : collections::BTreeMap<&str, bool> = rustup_target_text
+        .lines()
+        .filter(|line| RUSTUP_TARGET_PATTERN.is_match(line))
+        .map(|line|
+            RUSTUP_TARGET_PATTERN
+                .captures(line)
+                .expect("error: unable to parse target")
+                .get(1)
+                .expect("error: line missing a target in rustup output")
+                .as_str()
+        )
+        .map(|target| (target, !target_exclusion_pattern.is_match(target)))
+        .collect();
 
     if list_targets {
         let mut max_target_len : usize = 0;
 
         for target in targets.keys() {
-            let target_len : usize = target.len();
-            max_target_len = cmp::max(max_target_len, target_len);
+            max_target_len = cmp::max(max_target_len, target.len());
         }
 
         println!("{} {}\n", "TARGET".pad_to_width(max_target_len), "ENABLED");
@@ -208,33 +209,28 @@ fn main() {
         process::exit(0);
     }
 
-    targets.retain(|_, &mut enabled| enabled);
+    let enabled_targets : Vec<&str> = targets
+        .iter()
+        .filter(|(_, &enabled)| enabled)
+        .map(|(&target, _)| target)
+        .collect();
 
-    if targets.is_empty() {
+    if enabled_targets.is_empty() {
         eprintln!("error: no targets enabled");
         process::exit(1);
     }
 
-    let mut bin_dir : path::PathBuf = artifact_root.join("bin");
-
-    if banner != "" {
-        bin_dir = bin_dir.join(banner);
-    }
-
-    // cross automatically creates its --target-dir paths
-    let cross_dir : path::PathBuf = artifact_root.join("cross");
-
-    for target in targets.keys() {
+    for target in enabled_targets {
         println!("building {}...", target);
 
-        let target_dir_pathbuf : path::PathBuf = cross_dir
+        let target_dir_pathbuf : path::PathBuf = cross_dir_pathbuf
             .join(target);
-        let target_dir : &str = &target_dir_pathbuf
+        let target_dir_str : &str = &target_dir_pathbuf
             .display()
             .to_string();
 
         let cross_output : process::Output = process::Command::new("cross")
-                .args(&["build", "--target-dir", target_dir, "--target", target])
+                .args(&["build", "--target-dir", target_dir_str, "--target", target])
                 .args(rest.clone())
                 .stdout(process::Stdio::piped())
                 .stderr(process::Stdio::piped())
@@ -249,39 +245,39 @@ fn main() {
             process::exit(1);
         }
 
-        for mode in BUILD_MODES.iter() {
-            for application in &applications {
-                let application_dir_pathbuf : path::PathBuf = bin_dir
-                    .join(target);
+        for application in &applications {
+            let dest_dir_pathbuf : path::PathBuf = bin_dir_pathbuf
+                .join(target);
 
-                let application_dir : &str = &application_dir_pathbuf
-                    .display()
-                    .to_string();
+            let dest_dir_str : &str = &dest_dir_pathbuf
+                .display()
+                .to_string();
 
-                _ = fs::create_dir_all(application_dir)
-                    .expect("error: unable to create bin directory");
+            _ = fs::create_dir_all(dest_dir_str)
+                .expect("error: unable to create bin directory");
 
-                for extension in BINARY_FILE_EXTENSIONS.iter() {
-                    let mut application_source_pathbuf : path::PathBuf = target_dir_pathbuf
+            for extension in BINARY_FILE_EXTENSIONS.iter() {
+                for mode in BUILD_MODES.iter() {
+                    let mut source_pathbuf : path::PathBuf = target_dir_pathbuf
                         .join(target)
                         .join(mode)
                         .join(application);
-                    application_source_pathbuf.set_extension(extension);
+                    source_pathbuf.set_extension(extension);
 
-                    if application_source_pathbuf.exists() {
-                        let application_source_path : &str = &application_source_pathbuf
+                    if source_pathbuf.exists() {
+                        let source_str : &str = &source_pathbuf
                             .display()
                             .to_string();
 
-                        let mut application_destination_pathbuf : path::PathBuf = application_dir_pathbuf
+                        let mut dest_pathbuf : path::PathBuf = dest_dir_pathbuf
                             .join(application);
-                        application_destination_pathbuf.set_extension(extension);
+                        dest_pathbuf.set_extension(extension);
 
-                        let application_destination_path : &str = &application_destination_pathbuf
+                        let dest_str : &str = &dest_pathbuf
                             .display()
                             .to_string();
 
-                        _ = fs::copy(application_source_path, application_destination_path)
+                        _ = fs::copy(source_str, dest_str)
                             .expect("error: unable to copy binary");
                     }
                 }
