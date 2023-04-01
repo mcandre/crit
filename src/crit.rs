@@ -269,29 +269,6 @@ fn main() {
         bin_dir_pathbuf = bin_dir_pathbuf.join(banner);
     }
 
-    let cargo_str : String = fs::read_to_string("Cargo.toml")
-        .expect("error: unable to read Cargo.toml");
-
-    let cargo_table : toml::Table = cargo_str.parse::<toml::Table>()
-        .expect("error: unable to parse Cargo.toml");
-
-    let bin_tables : &Vec<toml::Value> = cargo_table["bin"]
-        .as_array()
-        .expect("error: unable to retrieve bin sections from Cargo.toml");
-
-    let applications : Vec<&str> = bin_tables
-        .iter()
-        .map(|e|
-            e["name"]
-                .as_str()
-                .expect("error: Cargo.toml binary missing name field")
-        )
-        .collect();
-
-    if applications.is_empty() {
-        eprintln!("error: no binaries declared in Cargo.toml")
-    }
-
     let targets_result : Result<collections::BTreeMap<String, bool>, String> = get_targets(target_exclusion_pattern);
 
     if let Err(err) = targets_result {
@@ -315,6 +292,46 @@ fn main() {
     if enabled_targets.is_empty() {
         eprintln!("error: no targets enabled");
         process::exit(1);
+    }
+
+    let bin_sections_result : Result<Vec<toml::Value>, String> = fs::read_to_string("Cargo.toml")
+        .map_err(|_| "unable to read Cargo.toml".to_string())
+        .and_then(|e|
+            e
+                .parse::<toml::Table>()
+                .map_err(|err| err.to_string())
+        )
+        .and_then(|e|
+            e
+                .get("bin")
+                .ok_or("no bin sections in Cargo.toml".to_string())
+                .map(|e2| e2.clone())
+        )
+        .and_then(|e|
+            e
+                .as_array()
+                .ok_or("bin section not an array in Cargo.toml".to_string())
+                .map(|e2| e2.clone())
+        );
+
+    if let Err(err) = bin_sections_result {
+        eprintln!("{}", err);
+        process::exit(1);
+    }
+
+    let bin_sections : Vec<toml::Value> = bin_sections_result.unwrap();
+
+    let applications : Vec<&str> = bin_sections
+        .iter()
+        .map(|e|
+            e["name"]
+                .as_str()
+                .expect("error: Cargo.toml binary missing name field")
+        )
+        .collect();
+
+    if applications.is_empty() {
+        eprintln!("error: no binaries declared in Cargo.toml")
     }
 
     for target in enabled_targets {
