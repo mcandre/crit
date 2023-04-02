@@ -328,14 +328,13 @@ fn main() {
         bin_dir_pathbuf = bin_dir_pathbuf.join(banner);
     }
 
-    let targets_result : Result<collections::BTreeMap<String, bool>, String> = get_targets(target_exclusion_pattern);
-
-    if let Err(err) = targets_result {
-        eprintln!("{}", err);
-        process::exit(1);
-    }
-
-    let targets : collections::BTreeMap<String, bool> = targets_result.unwrap();
+    let targets : collections::BTreeMap<String, bool> = match get_targets(target_exclusion_pattern) {
+        Err(err) => {
+            eprintln!("{}", err);
+            process::exit(1);
+        },
+        Ok(v) => v,
+    };
 
     if list_targets {
         list(targets);
@@ -353,14 +352,13 @@ fn main() {
         process::exit(1);
     }
 
-    let applications_result : Result<Vec<String>, String> = get_applications();
-
-    if let Err(err) = applications_result {
-        eprintln!("{}", err);
-        process::exit(1);
-    }
-
-    let applications : Vec<String> = applications_result.unwrap();
+    let applications : Vec<String> = match get_applications() {
+        Err(err) => {
+            eprintln!("{}", err);
+            process::exit(1);
+        },
+        Ok(v) => v,
+    };
 
     for target in enabled_targets {
         let target_config : TargetConfig = TargetConfig{
