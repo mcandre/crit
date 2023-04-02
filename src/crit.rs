@@ -71,6 +71,7 @@ pub fn version() {
     eprintln!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 }
 
+// Query rustup for the list of available Rust target triples
 pub fn get_targets(target_exclusion_pattern : regex::Regex) -> Result<collections::BTreeMap<String, bool>, String> {
     return process::Command::new("rustup")
         .args(["target", "list"])
@@ -117,12 +118,70 @@ pub fn list(targets : collections::BTreeMap<String, bool>) {
     }
 }
 
+// Query Cargo.toml for the list of binary application names
+pub fn get_applications() -> Result<Vec<String>, String> {
+    let bin_sections_result : Result<Vec<toml::Value>, String> = fs::read_to_string("Cargo.toml")
+        .map_err(|_| "unable to read Cargo.toml".to_string())
+        .and_then(|e|
+            e
+                .parse::<toml::Table>()
+                .map_err(|err| err.to_string())
+        )
+        .and_then(|e|
+            e
+                .get("bin")
+                .ok_or("no bin sections in Cargo.toml".to_string())
+                .map(|e2| e2.clone())
+        )
+        .and_then(|e|
+            e
+                .as_array()
+                .ok_or("bin section not an array in Cargo.toml".to_string())
+                .map(|e2| e2.clone())
+        );
+
+    if let Err(err) = bin_sections_result {
+        return Err(err);
+    }
+
+    let bin_sections : Vec<toml::Value> = bin_sections_result.unwrap();
+
+    let name_options : Vec<Option<&toml::Value>> = bin_sections
+        .iter()
+        .map(|e| e.get("name"))
+        .collect();
+
+    if name_options.contains(&None) {
+        return Err("bin section missing name field in Cargo.toml".to_string());
+    }
+
+    let name_str_results : Vec<Option<&str>> = name_options
+        .iter()
+        .map(|e| {
+            let e2 = e.unwrap();
+            e2.as_str()
+        })
+        .collect();
+
+    if name_str_results.contains(&None) {
+        return Err("bin section name is not a string in Cargo.toml".to_string());
+    }
+
+    return Ok(
+        name_str_results
+            .iter()
+            .map(|e| e.unwrap())
+            .map(|e| e.to_string())
+            .collect()
+    );
+}
+
 pub struct TargetConfig<'a> {
     pub cross_dir_pathbuf : &'a path::PathBuf,
     pub bin_dir_pathbuf : &'a path::PathBuf,
     pub target : &'a str,
     pub cross_args : &'a Vec<String>,
-    pub applications: &'a Vec<&'a str>,
+    pub applications: &'a Vec<String>,
 }
 
 impl TargetConfig<'_> {
@@ -294,60 +353,14 @@ fn main() {
         process::exit(1);
     }
 
-    let bin_sections_result : Result<Vec<toml::Value>, String> = fs::read_to_string("Cargo.toml")
-        .map_err(|_| "unable to read Cargo.toml".to_string())
-        .and_then(|e|
-            e
-                .parse::<toml::Table>()
-                .map_err(|err| err.to_string())
-        )
-        .and_then(|e|
-            e
-                .get("bin")
-                .ok_or("no bin sections in Cargo.toml".to_string())
-                .map(|e2| e2.clone())
-        )
-        .and_then(|e|
-            e
-                .as_array()
-                .ok_or("bin section not an array in Cargo.toml".to_string())
-                .map(|e2| e2.clone())
-        );
+    let applications_result : Result<Vec<String>, String> = get_applications();
 
-    if let Err(err) = bin_sections_result {
+    if let Err(err) = applications_result {
         eprintln!("{}", err);
         process::exit(1);
     }
 
-    let bin_sections : Vec<toml::Value> = bin_sections_result.unwrap();
-
-    let name_options : Vec<Option<&toml::Value>> = bin_sections
-        .iter()
-        .map(|e| e.get("name"))
-        .collect();
-
-    if name_options.contains(&None) {
-        eprintln!("{}", "bin section missing name field in Cargo.toml");
-        process::exit(1);
-    }
-
-    let name_str_results : Vec<Option<&str>> = name_options
-        .iter()
-        .map(|e| {
-            let e2 = e.unwrap();
-            e2.as_str()
-        })
-        .collect();
-
-    if name_str_results.contains(&None) {
-        eprintln!("{}", "bin section name is not a string in Cargo.toml");
-        process::exit(1);
-    }
-
-    let applications = name_str_results
-        .iter()
-        .map(|e| e.unwrap())
-        .collect();
+    let applications : Vec<String> = applications_result.unwrap();
 
     for target in enabled_targets {
         let target_config : TargetConfig = TargetConfig{
