@@ -105,13 +105,21 @@ pub fn get_targets(target_exclusion_pattern : regex::Regex) -> Result<collection
 
 /// Render target table
 pub fn list(targets : collections::BTreeMap<String, bool>) {
-    let max_target_len : usize = targets
+    let target_col_header : String = "TARGET".to_string();
+    let target_col_header_len = target_col_header.len();
+
+    let mut target_col_values : Vec<&String> = targets
         .keys()
+        .collect();
+    target_col_values.push(&target_col_header);
+
+    let max_target_len : usize = target_col_values
+        .iter()
         .map(|e| e.len())
         .max()
-        .expect("error: all targets blank");
+        .unwrap_or(target_col_header_len);
 
-    println!("{} {}\n", "TARGET".pad_to_width(max_target_len), "ENABLED");
+    println!("{} {}\n", target_col_header.pad_to_width(max_target_len), "ENABLED");
 
     for (target, enabled) in targets {
         println!("{} {}", target.pad_to_width(max_target_len), enabled);
@@ -302,20 +310,40 @@ fn main() {
                 list_targets = true;
             } else if optmatches.opt_present("c") {
                 if artifact_root_path.exists() {
-                    _ = fs::remove_dir_all(CRIT_ARTIFACT_ROOT)
-                        .expect("error: unable to delete crit artifact root directory");
+                    match fs::remove_dir_all(CRIT_ARTIFACT_ROOT) {
+                        Err(_) => {
+                            eprintln!("{}", "error: unable to delete crit artifact root directory");
+                            process::exit(1);
+                        },
+                        Ok(()) => (),
+                    };
                 }
 
                 process::exit(0);
             } else if optmatches.opt_present("b") {
-                banner = optmatches.opt_str("b")
-                    .expect("error: missing value for banner flag");
+                banner = match optmatches.opt_str("b") {
+                    None => {
+                        eprintln!("{}", "error: missing value for banner flag");
+                        process::exit(1);
+                    },
+                    Some(v) => v,
+                };
             } else if optmatches.opt_present("e") {
-                let ep = optmatches.opt_str("e")
-                    .expect("error: missing value for exclusion flag");
+                let ep = match optmatches.opt_str("e") {
+                    None => {
+                        eprintln!("{}", "error: missing value for exclusion flag");
+                        process::exit(1);
+                    },
+                    Some(v) => v,
+                };
 
-                target_exclusion_pattern = regex::Regex::new(&ep)
-                    .expect("error: unable to compile Rust regular expression");
+                target_exclusion_pattern = match regex::Regex::new(&ep) {
+                    Err(err) => {
+                        eprintln!("{}", err);
+                        process::exit(1);
+                    },
+                    Ok(v) => v,
+                };
             }
 
             if arguments.contains(&"--".to_string()) {
