@@ -82,9 +82,9 @@ pub fn get_targets(target_exclusion_pattern : regex::Regex) -> Result<collection
         .and_then(|output|
             match output.status.success() {
                 // work around rustup writing error messages to stdout
-                false => Err("unable to query rustup target list".to_string()),
+                false => Err("error: unable to query rustup target list".to_string()),
                 _ => String::from_utf8(output.stdout)
-                    .map_err(|_| "unable to decode rustup stdout stream".to_string()),
+                    .map_err(|_| "error: unable to decode rustup stdout stream".to_string()),
             }
         )
         .map(|text|
@@ -121,7 +121,7 @@ pub fn list(targets : collections::BTreeMap<String, bool>) {
 // Query Cargo.toml for the list of binary application names
 pub fn get_applications() -> Result<Vec<String>, String> {
     let bin_sections_result : Result<Vec<toml::Value>, String> = fs::read_to_string("Cargo.toml")
-        .map_err(|_| "unable to read Cargo.toml".to_string())
+        .map_err(|_| "error: unable to read Cargo.toml".to_string())
         .and_then(|e|
             e
                 .parse::<toml::Table>()
@@ -130,13 +130,13 @@ pub fn get_applications() -> Result<Vec<String>, String> {
         .and_then(|e|
             e
                 .get("bin")
-                .ok_or("no bin sections in Cargo.toml".to_string())
+                .ok_or("error: no binaries declared in Cargo.toml".to_string())
                 .map(|e2| e2.clone())
         )
         .and_then(|e|
             e
                 .as_array()
-                .ok_or("bin section not an array in Cargo.toml".to_string())
+                .ok_or("error: binary section not an array in Cargo.toml".to_string())
                 .map(|e2| e2.clone())
         );
 
@@ -152,7 +152,7 @@ pub fn get_applications() -> Result<Vec<String>, String> {
         .collect();
 
     if name_options.contains(&None) {
-        return Err("bin section missing name field in Cargo.toml".to_string());
+        return Err("error: binary missing name field in Cargo.toml".to_string());
     }
 
     let name_str_results : Vec<Option<&str>> = name_options
@@ -164,7 +164,7 @@ pub fn get_applications() -> Result<Vec<String>, String> {
         .collect();
 
     if name_str_results.contains(&None) {
-        return Err("bin section name is not a string in Cargo.toml".to_string());
+        return Err("error: binary name not a string in Cargo.toml".to_string());
     }
 
     return Ok(
@@ -200,7 +200,7 @@ impl TargetConfig<'_> {
                 .output();
 
         if let Err(_) = cross_output_result {
-            return Err("unable to run cross".to_string());
+            return Err("error: unable to run cross".to_string());
         }
 
         let cross_output : process::Output = cross_output_result.unwrap();
@@ -209,7 +209,7 @@ impl TargetConfig<'_> {
             let cross_stderr_result : Result<String, string::FromUtf8Error> = String::from_utf8(cross_output.stderr);
 
             if let Err(_) = cross_stderr_result {
-                return Err("unable to decode cross stderr stream".to_string());
+                return Err("error: unable to decode cross stderr stream".to_string());
             }
 
             return Err(cross_stderr_result.unwrap());
@@ -224,7 +224,7 @@ impl TargetConfig<'_> {
                 .to_string();
 
             if let Err(_) = fs::create_dir_all(dest_dir_str) {
-                return Err("unable to create bin directory".to_string());
+                return Err("error: unable to create bin directory".to_string());
             }
 
             for extension in BINARY_FILE_EXTENSIONS.iter() {
@@ -249,7 +249,7 @@ impl TargetConfig<'_> {
                             .to_string();
 
                         if let Err(_) = fs::copy(source_str, dest_str) {
-                            return Err("unable to copy binary".to_string());
+                            return Err("error: unable to copy binary".to_string());
                         }
                     }
                 }
