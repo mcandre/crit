@@ -105,7 +105,7 @@ Naturally, when cross-compiling multiple targets, that time multiplies by the nu
 Some cross-compilation performance tips:
 
 * Tune your Docker setup (see the Docker First Aid Kit above)
-* Temporarily disable common Cargo build profile options (`codegen-units`, `lto`, `strip`, etc.)
+* Reset common Cargo build profile options (`codegen-units`, `lto`, `strip`, etc.)
 * Use debug mode (e.g., `--`)
 * Use fewer dependencies
 * Design with the [UNIX Philosophy](https://en.wikipedia.org/wiki/Unix_philosophy), namely *Make each program do one thing well.* Not a hundred features poorly.
