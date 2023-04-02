@@ -295,6 +295,7 @@ fn main() {
     let artifact_root_path : &path::Path = path::Path::new(CRIT_ARTIFACT_ROOT);
     let cross_dir_pathbuf : path::PathBuf = artifact_root_path.join("cross");
 
+    let mut clean : bool = false;
     let mut list_targets : bool = false;
     let mut banner : String = "".to_string();
     let mut bin_dir_pathbuf : path::PathBuf = artifact_root_path.join("bin");
@@ -331,14 +332,7 @@ fn main() {
             } else if optmatches.opt_present("l") {
                 list_targets = true;
             } else if optmatches.opt_present("c") {
-                if artifact_root_path.exists() {
-                    if let Err(err) = fs::remove_dir_all(CRIT_ARTIFACT_ROOT) {
-                        eprintln!("{}", err);
-                        process::exit(1);
-                    }
-                }
-
-                process::exit(0);
+                clean = true;
             } else if optmatches.opt_present("b") {
                 banner = match optmatches.opt_str("b") {
                     None => {
@@ -389,6 +383,17 @@ fn main() {
 
     if !banner.is_empty() {
         bin_dir_pathbuf = bin_dir_pathbuf.join(banner);
+    }
+
+    if clean {
+        if artifact_root_path.exists() {
+            if let Err(err) = fs::remove_dir_all(CRIT_ARTIFACT_ROOT) {
+                eprintln!("{}", err);
+                process::exit(1);
+            }
+        }
+
+        process::exit(0);
     }
 
     let targets : collections::BTreeMap<String, bool> = match get_targets(target_exclusion_pattern) {
