@@ -288,6 +288,125 @@ impl TargetConfig<'_> {
     }
 }
 
+/// clean_resources removes:
+///
+/// * CRIT_ARTIFACT_ROOT directory
+/// * cross Docker containers
+///
+fn clean_resources(artifact_root_path : &path::Path) -> Result<(), String> {
+    let cross_toml_path : &path::Path = path::Path::new("Cross.toml");
+
+    if cross_toml_path.exists() {
+        let cross_config : toml::Table = fs::read_to_string("Cross.toml")
+            .map_err(|_| "error: unable to read Cross.toml".to_string())
+            .and_then(|e|
+                e
+                    .parse::<toml::Table>()
+                    .map_err(|err| err.to_string())
+            )?;
+
+        if cross_config.contains_key("target") {
+            let blank_table = toml::Value::Table(toml::Table::new());
+
+            let targets_result : Result<&toml::Table, String> = cross_config
+                .get("target")
+                .unwrap_or(&blank_table)
+                .as_table()
+                .ok_or("target section not a table in Cross.toml".to_string());
+
+            let targets : &toml::Table = targets_result?;
+
+            let target_options : Vec<Option<&toml::Table>> = targets
+                .iter()
+                .map(|(_, target)| target.as_table())
+                .collect();
+
+            if target_options.iter().any(|e| e.is_none()) {
+                return Err("error: target entry not a table in Cross.toml".to_string());
+            }
+
+            let image_options : Vec<Option<String>> = target_options
+                .iter()
+                .map(|e|
+                    e
+                        .unwrap_or(&toml::Table::new())
+                        .get("image")
+                        .unwrap_or(&toml::Value::String("".to_string()))
+                        .as_str()
+                        .map(|e2| e2.to_string())
+                )
+                .collect();
+
+            if image_options.iter().any(|e| e.is_none()) {
+                return Err("error: target image not a string in Cross.toml".to_string());
+            }
+
+            let mut images : Vec<String> = image_options
+                .iter()
+                .map(|e| {
+                    let blank_string = "".to_string();
+
+                    e
+                        .clone()
+                        .unwrap_or(blank_string)
+                })
+                .collect();
+
+            // cross default image prefix
+            images.push("ghcr.io/cross-rs".to_string());
+
+            let docker_ps_output = process::Command::new("docker")
+                .args(["ps", "-a"])
+                .output()
+                .map_err(|_| "error: unable to run docker process list".to_string())?;
+
+            if !docker_ps_output.status.success() {
+                let docker_ps_stderr = String::from_utf8(docker_ps_output.stderr)
+                    .map_err(|_| "error: unable to decode docker process list stderr stream")?;
+
+                return Err(docker_ps_stderr);
+            }
+
+            let docker_ps_stdout : String = String::from_utf8(docker_ps_output.stdout)
+                .map_err(|_| "error: unable to decode docker process list stdout stream")?;
+
+            for line in docker_ps_stdout.lines() {
+                let pattern = format!("([[:xdigit:]]{{12}})\\s+({})", images.join("|"));
+
+                let re = regex::Regex::new(&pattern)
+                    .map_err(|_| "image name introduced invalid Rust regular expression syntax".to_string())?;
+
+                if re.is_match(line) {
+                    let container_id : &str = re
+                        .captures(line)
+                        .and_then(|e| e.get(1))
+                        .map(|e| e.as_str())
+                        .ok_or("error: container id not a string in docker process list output".to_string())?;
+
+                    let docker_rm_output = process::Command::new("docker")
+                        .args(["rm", "-f", container_id])
+                        .output()
+                        .map_err(|_| "error: unable to run docker container removal".to_string())?;
+
+                    if !docker_rm_output.status.success() {
+                        let docker_rm_stderr = String::from_utf8(docker_rm_output.stderr)
+                            .map_err(|_| "error: unable to decode docker container removal stderr stream".to_string())?;
+
+                        return Err(docker_rm_stderr);
+                    }
+                }
+            }
+        }
+    }
+
+    if artifact_root_path.exists() {
+        return fs::remove_dir_all(CRIT_ARTIFACT_ROOT)
+            .map_err(|_| "error: unable to remove crit artifact root directory".to_string());
+    }
+
+    Ok(())
+}
+
 /// CLI entrypoint
 fn main() {
     let brief = format!("Usage: {} [OPTIONS] [-- <CROSS OPTIONS>]", env!("CARGO_PKG_NAME"));
@@ -307,7 +426,7 @@ fn main() {
         .collect();
 
     let mut opts : getopts::Options = getopts::Options::new();
-    opts.optflag("c", "clean", "delete crit artifacts directory tree");
+    opts.optflag("c", "clean", "remove artifacts directory and docker containers");
     opts.optopt("b", "banner", "nest artifacts with a further subdirectory label", "<dir>");
     opts.optopt("e", "exclude-targets", "exclude targets", "<rust regex>");
     opts.optopt("F", "exclude-features", "exclude cargo features", "<rust regex>");
@@ -386,11 +505,9 @@ fn main() {
     }
 
     if clean {
-        if artifact_root_path.exists() {
-            if let Err(err) = fs::remove_dir_all(CRIT_ARTIFACT_ROOT) {
-                eprintln!("{}", err);
-                process::exit(1);
-            }
+        if let Err(err) = clean_resources(artifact_root_path) {
+            eprintln!("{}", err);
+            process::exit(1);
         }
 
         process::exit(0);
