@@ -9,21 +9,19 @@ extern crate toml;
 use pad::PadStr;
 use std::collections;
 use std::env;
-use std::io;
 use std::fs;
 use std::path;
 use std::process;
-use std::string;
 
 pub static CRIT_ARTIFACT_ROOT : &str = ".crit";
 
 lazy_static::lazy_static! {
     static ref RUSTUP_TARGET_PATTERN : regex::Regex = regex::Regex::new(r"(\S+)").unwrap();
 
-    /// DEFAULT_TARGET_EXCLUSION_PATTERNS collects patterns for problematic target triples,
+    /// DEFAULT_TARGET_EXCLUSION_PATTERN collects patterns for problematic target triples,
     /// such as bare metal targets that may lack support for the `std` package,
     /// or targets without community supported cross images.
-    static ref DEFAULT_TARGET_EXCLUSION_PATTERNS : regex::Regex = regex::Regex::new(
+    static ref DEFAULT_TARGET_EXCLUSION_PATTERN : regex::Regex = regex::Regex::new(
         &[
             "android",
             "cuda",
@@ -39,6 +37,14 @@ lazy_static::lazy_static! {
             "uefi",
             "unknown-none",
             "wasm",
+        ].join("|")
+    ).unwrap();
+
+    /// DEFAULT_FEATURE_EXCLUSION_PATTERN collects patterns for problematic binary features,
+    /// such as internal development programs.
+    static ref DEFAULT_FEATURE_EXCLUSION_PATTERN : regex::Regex = regex::Regex::new(
+        &[
+            "letmeout",
         ].join("|")
     ).unwrap();
 
@@ -119,7 +125,7 @@ pub fn list(targets : collections::BTreeMap<String, bool>) {
         .max()
         .unwrap_or(target_col_header_len);
 
-    println!("{} {}\n", target_col_header.pad_to_width(max_target_len), "ENABLED");
+    println!("{} ENABLED\n", target_col_header.pad_to_width(max_target_len));
 
     for (target, enabled) in targets {
         println!("{} {}", target.pad_to_width(max_target_len), enabled);
@@ -127,7 +133,7 @@ pub fn list(targets : collections::BTreeMap<String, bool>) {
 }
 
 // Query Cargo.toml for the list of binary application names
-pub fn get_applications() -> Result<Vec<String>, String> {
+pub fn get_applications(feature_exclusion_pattern : regex::Regex) -> Result<Vec<String>, String> {
     let bin_sections_result : Result<Vec<toml::Value>, String> = fs::read_to_string("Cargo.toml")
         .map_err(|_| "error: unable to read Cargo.toml".to_string())
         .and_then(|e|
@@ -148,14 +154,35 @@ pub fn get_applications() -> Result<Vec<String>, String> {
                 .map(|e2| e2.clone())
         );
 
-    if let Err(err) = bin_sections_result {
-        return Err(err);
-    }
-
-    let bin_sections : Vec<toml::Value> = bin_sections_result.unwrap();
+    let bin_sections : Vec<toml::Value> = bin_sections_result?;
 
     let name_options : Vec<Option<&toml::Value>> = bin_sections
         .iter()
+        .filter(|e| {
+            let feature_values_result : Option<&Vec<toml::Value>> = e
+                .get("required-features")
+                .and_then(|e2| e2.as_array());
+
+            if feature_values_result.is_none() {
+                return true
+            }
+
+            let feature_values : &Vec<toml::Value> = feature_values_result.unwrap();
+
+            let feature_options : Vec<Option<&str>> = feature_values
+                .iter()
+                .map(|e2| e2.as_str())
+                .collect();
+
+            feature_options
+                .iter()
+                .any(|e|
+                    match e {
+                        Some(feature) => feature_exclusion_pattern.is_match(feature),
+                        None => false,
+                    }
+                )
+        })
         .map(|e| e.get("name"))
         .collect();
 
@@ -185,9 +212,9 @@ pub fn get_applications() -> Result<Vec<String>, String> {
 }
 
 pub struct TargetConfig<'a> {
+    pub target : &'a str,
     pub cross_dir_pathbuf : &'a path::PathBuf,
     pub bin_dir_pathbuf : &'a path::PathBuf,
-    pub target : &'a str,
     pub cross_args : &'a Vec<String>,
     pub applications: &'a Vec<String>,
 }
@@ -195,50 +222,44 @@ pub struct TargetConfig<'a> {
 impl TargetConfig<'_> {
     fn build(&self) -> Result<(), String> {
         let target_dir_pathbuf : path::PathBuf = self.cross_dir_pathbuf
-            .join(&self.target);
+            .join(self.target);
+
         let target_dir_str : &str = &target_dir_pathbuf
             .display()
             .to_string();
 
-        let cross_output_result : Result<process::Output, io::Error> = process::Command::new("cross")
-                .args(&["build", "--target-dir", target_dir_str, "--target", &self.target])
+        let cross_output_result : Result<process::Output, String> = process::Command::new("cross")
+                .args(["build", "--target-dir", target_dir_str, "--target", self.target])
                 .args(self.cross_args.clone())
                 .stdout(process::Stdio::piped())
                 .stderr(process::Stdio::piped())
-                .output();
+                .output()
+                .map_err(|err| err.to_string());
 
-        if let Err(_) = cross_output_result {
-            return Err("error: unable to run cross".to_string());
-        }
-
-        let cross_output : process::Output = cross_output_result.unwrap();
+        let cross_output : process::Output = cross_output_result?;
 
         if !cross_output.status.success() {
-            let cross_stderr_result : Result<String, string::FromUtf8Error> = String::from_utf8(cross_output.stderr);
+            let cross_stderr : String = String::from_utf8(cross_output.stderr)
+                .map_err(|err| err.to_string())?;
 
-            if let Err(_) = cross_stderr_result {
-                return Err("error: unable to decode cross stderr stream".to_string());
-            }
-
-            return Err(cross_stderr_result.unwrap());
+            return Err(cross_stderr);
         }
 
         for application in self.applications {
             let dest_dir_pathbuf : path::PathBuf = self.bin_dir_pathbuf
-                .join(&self.target);
+                .join(self.target);
 
             let dest_dir_str : &str = &dest_dir_pathbuf
                 .display()
                 .to_string();
 
-            if let Err(_) = fs::create_dir_all(dest_dir_str) {
-                return Err("error: unable to create bin directory".to_string());
-            }
+            fs::create_dir_all(dest_dir_str)
+                .map_err(|err| err.to_string())?;
 
             for extension in BINARY_FILE_EXTENSIONS.iter() {
                 for mode in BUILD_MODES.iter() {
                     let mut source_pathbuf : path::PathBuf = target_dir_pathbuf
-                        .join(&self.target)
+                        .join(self.target)
                         .join(mode)
                         .join(application);
                     source_pathbuf.set_extension(extension);
@@ -256,15 +277,14 @@ impl TargetConfig<'_> {
                             .display()
                             .to_string();
 
-                        if let Err(_) = fs::copy(source_str, dest_str) {
-                            return Err("error: unable to copy binary".to_string());
-                        }
+                        fs::copy(source_str, dest_str)
+                            .map_err(|err| err.to_string())?;
                     }
                 }
             }
         }
 
-        return Ok(())
+        Ok(())
     }
 }
 
@@ -278,7 +298,8 @@ fn main() {
     let mut list_targets : bool = false;
     let mut banner : String = "".to_string();
     let mut bin_dir_pathbuf : path::PathBuf = artifact_root_path.join("bin");
-    let mut target_exclusion_pattern : regex::Regex = DEFAULT_TARGET_EXCLUSION_PATTERNS.clone();
+    let mut target_exclusion_pattern : regex::Regex = DEFAULT_TARGET_EXCLUSION_PATTERN.clone();
+    let mut feature_exclusion_pattern : regex::Regex = DEFAULT_FEATURE_EXCLUSION_PATTERN.clone();
     let mut cross_args : Vec<String> = vec!["-r"]
         .iter()
         .map(|e| e.to_string())
@@ -288,6 +309,7 @@ fn main() {
     opts.optflag("c", "clean", "delete crit artifacts directory tree");
     opts.optopt("b", "banner", "nest artifacts with a further subdirectory label", "<dir>");
     opts.optopt("e", "exclude-targets", "exclude targets", "<rust regex>");
+    opts.optopt("F", "exclude-features", "exclude cargo features", "<rust regex>");
     opts.optflag("l", "list-targets", "list enabled targets");
     opts.optflag("h", "help", "print usage info");
     opts.optflag("v", "version", "print version info");
@@ -310,20 +332,17 @@ fn main() {
                 list_targets = true;
             } else if optmatches.opt_present("c") {
                 if artifact_root_path.exists() {
-                    match fs::remove_dir_all(CRIT_ARTIFACT_ROOT) {
-                        Err(_) => {
-                            eprintln!("{}", "error: unable to delete crit artifact root directory");
-                            process::exit(1);
-                        },
-                        Ok(()) => (),
-                    };
+                    if let Err(err) = fs::remove_dir_all(CRIT_ARTIFACT_ROOT) {
+                        eprintln!("{}", err);
+                        process::exit(1);
+                    }
                 }
 
                 process::exit(0);
             } else if optmatches.opt_present("b") {
                 banner = match optmatches.opt_str("b") {
                     None => {
-                        eprintln!("{}", "error: missing value for banner flag");
+                        eprintln!("error: missing value for banner flag");
                         process::exit(1);
                     },
                     Some(v) => v,
@@ -331,13 +350,29 @@ fn main() {
             } else if optmatches.opt_present("e") {
                 let ep = match optmatches.opt_str("e") {
                     None => {
-                        eprintln!("{}", "error: missing value for exclusion flag");
+                        eprintln!("error: missing value for target exclusion flag");
                         process::exit(1);
                     },
                     Some(v) => v,
                 };
 
                 target_exclusion_pattern = match regex::Regex::new(&ep) {
+                    Err(err) => {
+                        eprintln!("{}", err);
+                        process::exit(1);
+                    },
+                    Ok(v) => v,
+                };
+            } else if optmatches.opt_present("F") {
+                let fp = match optmatches.opt_str("F") {
+                    None => {
+                        eprintln!("error: missing value for feature exclusion flag");
+                        process::exit(1);
+                    },
+                    Some(v) => v,
+                };
+
+                feature_exclusion_pattern = match regex::Regex::new(&fp) {
                     Err(err) => {
                         eprintln!("{}", err);
                         process::exit(1);
@@ -352,7 +387,7 @@ fn main() {
         }
     }
 
-    if banner != "" {
+    if !banner.is_empty() {
         bin_dir_pathbuf = bin_dir_pathbuf.join(banner);
     }
 
@@ -380,7 +415,7 @@ fn main() {
         process::exit(1);
     }
 
-    let applications : Vec<String> = match get_applications() {
+    let applications : Vec<String> = match get_applications(feature_exclusion_pattern) {
         Err(err) => {
             eprintln!("{}", err);
             process::exit(1);
@@ -390,9 +425,9 @@ fn main() {
 
     for target in enabled_targets {
         let target_config : TargetConfig = TargetConfig{
+            target,
             cross_dir_pathbuf: &cross_dir_pathbuf,
             bin_dir_pathbuf: &bin_dir_pathbuf,
-            target: target,
             cross_args: &cross_args,
             applications: &applications,
         };

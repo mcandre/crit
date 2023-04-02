@@ -17,30 +17,47 @@
 # INSTALL BINARIES FROM SOURCE
 
 ```console
-$ cargo install --bins --path .
+$ tinyrick install
 ```
 
 # UNINSTALL BINARIES
 
 ```console
-$ cargo uninstall crit
+$ tinyrick uninstall
 ```
 
 # SECURITY AUDIT
 
 ```console
-$ cargo audit
+$ tinyrick audit
+```
+
+# LINT
+
+```console
+$ tinyrick lint
 ```
 
 # TEST
 
 ```console
-$ crit -l
+$ tinyrick test
 ```
 
 # PORT
 
 ```console
-$ crit -b crit-0.0.5
-$ sh -c "cd .crit/bin && zip -r crit-0.0.5.zip crit-0.0.5"
+$ tinyrick port
+```
+
+# PUBLISH
+
+```console
+$ tinyrick publish
+```
+
+# CLEAN
+
+```console
+$ tinyrick clean
 ```
