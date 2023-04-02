@@ -321,18 +321,33 @@ fn main() {
 
     let bin_sections : Vec<toml::Value> = bin_sections_result.unwrap();
 
-    let applications : Vec<&str> = bin_sections
+    let name_options : Vec<Option<&toml::Value>> = bin_sections
         .iter()
-        .map(|e|
-            e["name"]
-                .as_str()
-                .expect("error: Cargo.toml binary missing name field")
-        )
+        .map(|e| e.get("name"))
         .collect();
 
-    if applications.is_empty() {
-        eprintln!("error: no binaries declared in Cargo.toml")
+    if name_options.contains(&None) {
+        eprintln!("{}", "bin section missing name field in Cargo.toml");
+        process::exit(1);
     }
+
+    let name_str_results : Vec<Option<&str>> = name_options
+        .iter()
+        .map(|e| {
+            let e2 = e.unwrap();
+            e2.as_str()
+        })
+        .collect();
+
+    if name_str_results.contains(&None) {
+        eprintln!("{}", "bin section name is not a string in Cargo.toml");
+        process::exit(1);
+    }
+
+    let applications = name_str_results
+        .iter()
+        .map(|e| e.unwrap())
+        .collect();
 
     for target in enabled_targets {
         let target_config : TargetConfig = TargetConfig{
