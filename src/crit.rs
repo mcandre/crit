@@ -561,4 +561,6 @@ fn main() {
             process::exit(1);
         }
     }
+
+    eprintln!("artifacts copied to {}", bin_dir_pathbuf.display());
 }
