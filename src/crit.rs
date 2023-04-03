@@ -1,11 +1,13 @@
 //! CLI crit tool
 
+extern crate die;
 extern crate getopts;
 extern crate lazy_static;
 extern crate pad;
 extern crate regex;
 extern crate toml;
 
+use die::{Die, die};
 use pad::PadStr;
 use std::collections;
 use std::env;
@@ -65,16 +67,6 @@ lazy_static::lazy_static! {
         .iter()
         .map(|e| e.to_string())
         .collect();
-}
-
-// Show short CLI spec
-fn usage(brief : &str, opts : &getopts::Options) {
-    eprintln!("{}", (*opts).usage(brief));
-}
-
-/// Show version information
-pub fn version() {
-    eprintln!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
 }
 
 // Query rustup for the list of available Rust target triples
@@ -414,8 +406,6 @@ fn main() {
     let artifact_root_path : &path::Path = path::Path::new(CRIT_ARTIFACT_ROOT);
     let cross_dir_pathbuf : path::PathBuf = artifact_root_path.join("cross");
 
-    let mut clean : bool = false;
-    let mut list_targets : bool = false;
     let mut banner : String = "".to_string();
     let mut bin_dir_pathbuf : path::PathBuf = artifact_root_path.join("bin");
     let mut target_exclusion_pattern : regex::Regex = DEFAULT_TARGET_EXCLUSION_PATTERN.clone();
@@ -434,70 +424,47 @@ fn main() {
     opts.optflag("h", "help", "print usage info");
     opts.optflag("v", "version", "print version info");
 
+    let usage : String = opts.usage(&brief);
+
     let arguments : Vec<String> = env::args().collect();
 
-    match opts.parse(&arguments[1..]) {
-        Err(_) => {
-            usage(&brief, &opts);
-            process::exit(1);
-        },
-        Ok(optmatches) => {
-            if optmatches.opt_present("h") {
-                usage(&brief, &opts);
-                process::exit(0);
-            } else if optmatches.opt_present("v") {
-                version();
-                process::exit(0);
-            } else if optmatches.opt_present("l") {
-                list_targets = true;
-            } else if optmatches.opt_present("c") {
-                clean = true;
-            } else if optmatches.opt_present("b") {
-                banner = match optmatches.opt_str("b") {
-                    None => {
-                        eprintln!("error: missing value for banner flag");
-                        process::exit(1);
-                    },
-                    Some(v) => v,
-                };
-            } else if optmatches.opt_present("e") {
-                let ep = match optmatches.opt_str("e") {
-                    None => {
-                        eprintln!("error: missing value for target exclusion flag");
-                        process::exit(1);
-                    },
-                    Some(v) => v,
-                };
+    let optmatches = opts.parse(&arguments[1..])
+        .die(&usage);
 
-                target_exclusion_pattern = match regex::Regex::new(&ep) {
-                    Err(err) => {
-                        eprintln!("{}", err);
-                        process::exit(1);
-                    },
-                    Ok(v) => v,
-                };
-            } else if optmatches.opt_present("F") {
-                let fp = match optmatches.opt_str("F") {
-                    None => {
-                        eprintln!("error: missing value for feature exclusion flag");
-                        process::exit(1);
-                    },
-                    Some(v) => v,
-                };
+    if optmatches.opt_present("h") {
+        die!(0; usage);
+    }
 
-                feature_exclusion_pattern = match regex::Regex::new(&fp) {
-                    Err(err) => {
-                        eprintln!("{}", err);
-                        process::exit(1);
-                    },
-                    Ok(v) => v,
-                };
-            }
+    if optmatches.opt_present("v") {
+        die!(0; format!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")));
+    }
 
-            if arguments.contains(&"--".to_string()) {
-                cross_args = optmatches.free;
-            }
-        }
+    let list_targets : bool = optmatches.opt_present("l");
+    let clean : bool = optmatches.opt_present("c");
+
+    if optmatches.opt_present("b") {
+        banner = optmatches.opt_str("b")
+            .die("error: missing value for banner flag");
+    }
+
+    if optmatches.opt_present("e") {
+        let ep = optmatches.opt_str("e")
+            .die("error: missing value for target exclusion flag");
+
+        target_exclusion_pattern = regex::Regex::new(&ep)
+            .die("error: unable to parse target exclusion pattern");
+    }
+
+    if optmatches.opt_present("F") {
+        let fp = optmatches.opt_str("F")
+            .die("error: missing value for feature exclusion flag");
+
+        feature_exclusion_pattern = regex::Regex::new(&fp)
+            .die("error: unable to parse feature exclusion pattern");
+    }
+
+    if arguments.contains(&"--".to_string()) {
+        cross_args = optmatches.free;
     }
 
     if !banner.is_empty() {
@@ -505,25 +472,18 @@ fn main() {
     }
 
     if clean {
-        if let Err(err) = clean_resources(artifact_root_path) {
-            eprintln!("{}", err);
-            process::exit(1);
-        }
+        clean_resources(artifact_root_path)
+            .die("error: unable to cleanup resources");
 
         process::exit(0);
     }
 
-    let targets : collections::BTreeMap<String, bool> = match get_targets(target_exclusion_pattern) {
-        Err(err) => {
-            eprintln!("{}", err);
-            process::exit(1);
-        },
-        Ok(v) => v,
-    };
+    let targets : collections::BTreeMap<String, bool> = get_targets(target_exclusion_pattern)
+        .die("error: unable to query rustup target list");
 
     if list_targets {
         list(targets);
-        process::exit(0);
+        die!(0);
     }
 
     let enabled_targets : Vec<&str> = targets
@@ -533,17 +493,11 @@ fn main() {
         .collect();
 
     if enabled_targets.is_empty() {
-        eprintln!("error: no targets enabled");
-        process::exit(1);
+        die!("error: no targets enabled");
     }
 
-    let applications : Vec<String> = match get_applications(feature_exclusion_pattern) {
-        Err(err) => {
-            eprintln!("{}", err);
-            process::exit(1);
-        },
-        Ok(v) => v,
-    };
+    let applications : Vec<String> = get_applications(feature_exclusion_pattern)
+        .die("error: unable to query binary names from Cargo.toml");
 
     for target in enabled_targets {
         let target_config : TargetConfig = TargetConfig{
@@ -557,8 +511,7 @@ fn main() {
         eprintln!("building {}...", target);
 
         if let Err(err) = target_config.build() {
-            eprintln!("{}", err);
-            process::exit(1);
+            die!(err);
         }
     }
 
