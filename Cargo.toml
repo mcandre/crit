@@ -12,12 +12,12 @@ getopts = "0.2.18"
 lazy_static = "1.4.0"
 pad = "0.1.6"
 regex = "1.7.3"
-tinyrick = "0.0.9"
-tinyrick_extras = "0.0.3"
+tinyrick = { version = "^0.0.9", optional = true }
+tinyrick_extras = { version = "^0.0.3", optional = true }
 toml = "0.7.3"
 
 [features]
-letmeout = []
+letmeout = ["tinyrick", "tinyrick_extras"]
 
 [lib]
 name = "crit"
