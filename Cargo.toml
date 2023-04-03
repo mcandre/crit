@@ -19,8 +19,8 @@ toml = "0.7.3"
 [features]
 letmeout = []
 
-# [lib]
-# name = "crit"
+[lib]
+name = "crit"
 
 [[bin]]
 name = "crit"
