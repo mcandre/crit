@@ -35,6 +35,10 @@ See `crit -h` for more options.
 
 https://crates.io/crates/crit
 
+# API DOCUMENTATION
+
+https://docs.rs/crit/
+
 # DOWNLOAD
 
 https://github.com/mcandre/crit/releases
