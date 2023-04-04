@@ -62,18 +62,6 @@ fn banner() -> String {
     format!("{}-{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
 }
 
-/// Generate cross-platform binaries.
-fn crit() {
-    let b : &str = &banner();
-
-    assert!(
-        tinyrick::exec_mut!("crit", &["-b", b])
-            .status()
-            .unwrap()
-            .success()
-    );
-}
-
 /// Compress binaries.
 fn archive() {
     let b : &str = &banner();
@@ -101,7 +89,7 @@ fn archive() {
 
 /// Prepare cross-platform release media.
 fn port() {
-    tinyrick::deps(crit);
+    tinyrick_extras::crit(banner());
     tinyrick::deps(archive);
 }
 
@@ -151,7 +139,6 @@ fn main() {
         clippy,
         lint,
         test,
-        crit,
         archive,
         port,
         publish,

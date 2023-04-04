@@ -33,6 +33,16 @@ pub fn install_binaries() {
   tinyrick::exec!("cargo", &["install", "--force", "--path", "."]);
 }
 
+/// Generate cross-platform binaries.
+pub fn crit(banner : String) {
+    assert!(
+        tinyrick::exec_mut!("crit", &["-b", &banner])
+            .status()
+            .unwrap()
+            .success()
+    );
+}
+
 /// Uninstall artifacts
 pub fn uninstall_binaries() {
   tinyrick::exec!("cargo", &["uninstall"]);
