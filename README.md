@@ -37,7 +37,7 @@ https://crates.io/crates/crit
 
 # API DOCUMENTATION
 
-https://docs.rs/crit/
+https://docs.rs/crit/latest/crit/
 
 # DOWNLOAD
 
