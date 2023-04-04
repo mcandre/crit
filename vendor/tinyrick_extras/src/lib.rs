@@ -34,9 +34,9 @@ pub fn install_binaries() {
 }
 
 /// Generate cross-platform binaries.
-pub fn crit(banner : String) {
+pub fn crit(args : Vec<String>) {
     assert!(
-        tinyrick::exec_mut!("crit", &["-b", &banner])
+        tinyrick::exec_mut!("crit", args)
             .status()
             .unwrap()
             .success()

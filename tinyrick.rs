@@ -89,7 +89,7 @@ fn archive() {
 
 /// Prepare cross-platform release media.
 fn port() {
-    tinyrick_extras::crit(banner());
+    tinyrick_extras::crit(vec!["-b".to_string(), banner()]);
     tinyrick::deps(archive);
 }
 
