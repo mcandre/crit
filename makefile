@@ -10,4 +10,4 @@ all:
 		cargo-audit \
 		cross@0.2.5 \
 		tinyrick@0.0.9 \
-		unmake@0.0.11
+		unmake@0.0.12
