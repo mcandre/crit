@@ -50,7 +50,7 @@ lazy_static::lazy_static! {
     ).unwrap();
 
     /// BUILD_MODES enumerates cargo's major build modes.
-    pub static ref BUILD_MODES: Vec<String> = vec![
+    pub static ref BUILD_MODES: Vec<String> = [
         "debug",
         "release",
     ]
@@ -60,7 +60,7 @@ lazy_static::lazy_static! {
 
 
     /// BINARY_FILE_EXTENSIONS enumerates potential cargo build binary file extensions.
-    pub static ref BINARY_FILE_EXTENSIONS: Vec<String> = vec![
+    pub static ref BINARY_FILE_EXTENSIONS: Vec<String> = [
         "",
         "exe",
         "js",
