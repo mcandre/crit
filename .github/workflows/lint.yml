@@ -6,11 +6,7 @@ on: # yamllint disable-line rule:truthy
 jobs:
   Lint:
     runs-on: "ubuntu-latest"
-    env:
-      GOPATH: "/home/runner/go"
     steps:
-    - run: "echo \"/usr/local/go/bin\" >> $GITHUB_PATH"
-    - run: "echo \"${GOPATH}/bin\" >> $GITHUB_PATH"
     - uses: "actions/checkout@v4"
     - run: "sudo apt-get install -y cargo make"
     - run: "make"
