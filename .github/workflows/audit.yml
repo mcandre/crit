@@ -1,0 +1,21 @@
+---
+name: "Audit"
+on: # yamllint disable-line rule:truthy
+  push:
+  pull_request:
+  schedule:
+  - cron: "0 0 * * 1"
+jobs:
+  Audit:
+    runs-on: "ubuntu-latest"
+    env:
+      GOPATH: "/home/runner/go"
+    steps:
+    - run: "echo \"/usr/local/go/bin\" >> $GITHUB_PATH"
+    - run: "echo \"${GOPATH}/bin\" >> $GITHUB_PATH"
+    - uses: "actions/checkout@v4"
+    - run: "sudo apt-get install -y cargo make"
+    - run: "make"
+    - run: "tinyrick audit"
+      env:
+        SNYK_TOKEN: "${{ secrets.SNYK_TOKEN }}"
