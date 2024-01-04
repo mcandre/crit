@@ -31,6 +31,7 @@ lazy_static::lazy_static! {
             "fuchsia",
             "gnux32",
             "ios",
+            "loongarch",
             "msvc",
             "none-eabi",
             "pc-solaris",
