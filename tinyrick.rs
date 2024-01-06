@@ -28,6 +28,7 @@ fn rustfmt() {
 /// Run unmake
 fn unmake() {
     tinyrick::exec!("unmake", &["."]);
+    tinyrick::exec!("unmake", &["-n", "."]);
 }
 
 /// Validate documentation and run linters
