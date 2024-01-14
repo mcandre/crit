@@ -1,10 +1,10 @@
 # BUILDTIME REQUIREMENTS
 
+* [Docker](https://www.docker.com/) 20.10.12+
+* POSIX compatible [make](https://pubs.opengroup.org/onlinepubs/9699919799/utilities/make.html)
 * [rustup](https://rustup.rs/) 1.25.2+
 * [Rust](https://www.rust-lang.org/en-US/) 1.75.0+
-* [Docker](https://www.docker.com/) 20.10.12+
-* [zip](https://en.wikipedia.org/wiki/ZIP_(file_format))
-* a POSIX compliant [make](https://pubs.opengroup.org/onlinepubs/9699919799/utilities/make.html) implementation (e.g. GNU make, BSD make, etc.)
+* POSIX compatible [tar](https://pubs.opengroup.org/onlinepubs/7908799/xcu/tar.html)
 * Provision additional dev tools with `make`
 
 ## Recommended
@@ -13,10 +13,14 @@
 * [Docker First Aid Kit](https://github.com/mcandre/docker-first-aid-kit)
 * Apply `DOCKER_DEFAULT_PLATFORM` = `linux/amd64` environment variable
 * [ASDF](https://asdf-vm.com/) 0.10 (run `asdf reshim` after provisioning)
-* [direnv](https://direnv.net/) 2
 * [cargo-cache](https://crates.io/crates/cargo-cache)
+* [direnv](https://direnv.net/) 2
+* POSIX compatible [tar](https://pubs.opengroup.org/onlinepubs/7908799/xcu/tar.html)
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
 * GNU compatible [time](https://www.gnu.org/software/time/)
+* a UNIX environment, such as macOS, Linux, BSD, [WSL](https://learn.microsoft.com/en-us/windows/wsl/), etc.
+
+Non-UNIX environments may produce subtle adverse effects when linting or generating application ports.
 
 # INSTALL BINARIES FROM SOURCE
 
