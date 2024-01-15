@@ -66,8 +66,8 @@ BSD-2-Clause
 * [Docker First Aid Kit](https://github.com/mcandre/docker-first-aid-kit)
 * Apply `DOCKER_DEFAULT_PLATFORM` = `linux/amd64` environment variable
 * [ASDF](https://asdf-vm.com/) 0.10 (run `asdf reshim` after each Rust application binary installation)
-* [direnv](https://direnv.net/) 2
 * [cargo-cache](https://crates.io/crates/cargo-cache)
+* [direnv](https://direnv.net/) 2
 * POSIX compatible [tar](https://pubs.opengroup.org/onlinepubs/7908799/xcu/tar.html)
 * [tinyrick](https://github.com/mcandre/tinyrick) 0.0.9
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
