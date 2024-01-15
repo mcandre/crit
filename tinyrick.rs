@@ -73,6 +73,7 @@ fn banner() -> String {
     format!("{}-{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
 }
 
+/// archive bundles executables.
 fn archive() {
     tinyrick_extras::archive(
         path::Path::new(".crit").join("bin").display().to_string(),
