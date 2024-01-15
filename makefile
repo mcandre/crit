@@ -9,5 +9,5 @@ all:
 	cargo install --force \
 		cargo-audit \
 		cross@0.2.5 \
-		tinyrick@0.0.9 \
+		tinyrick@0.0.14 \
 		unmake@0.0.16
