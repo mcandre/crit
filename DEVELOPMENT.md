@@ -2,6 +2,7 @@
 
 * [Docker](https://www.docker.com/) 20.10.12+
 * POSIX compatible [make](https://pubs.opengroup.org/onlinepubs/9699919799/utilities/make.html)
+* [Node.js](https://nodejs.org/en/) 20.10.0+
 * [rustup](https://rustup.rs/) 1.25.2+
 * [Rust](https://www.rust-lang.org/en-US/) 1.75.0+
 * POSIX compatible [tar](https://pubs.opengroup.org/onlinepubs/7908799/xcu/tar.html)
