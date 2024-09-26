@@ -124,12 +124,13 @@ Some cross-compilation performance tips:
 * Perform cross-compilation in a CI/CD pipeline with more CPU, disk, and RAM resources
 * Exclude more targets (e.g., `-e <target pattern>`)
 
-# CREDITS
+# SEE ALSO
 
 * [cross](https://github.com/cross-rs/cross) underlying cross-compiler system
 * [cross-toolchains](https://github.com/cross-rs/cross-toolchains) provisions cross Docker images
 * [cubejs/rust-cross](https://hub.docker.com/r/cubejs/rust-cross/tags) Docker images for additional cross targets
 * [factorio](https://github.com/mcandre/factorio) generates Go application ports based on the standard Go toolchain
 * [tug](https://github.com/mcandre/tug) automates multi-platform Docker image builds
+* [unmake](https://github.com/mcandre/unmake), a linter for makefiles
 * [WASM](https://webassembly.org/) provides a portable interface for C/C++ code.
 * [xgo](https://github.com/crazy-max/xgo) supports Go projects with native cgo dependencies.
