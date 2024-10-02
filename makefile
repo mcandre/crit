@@ -3,8 +3,6 @@
 .PHONY: all
 
 all:
-	npm install -g snyk
-
 	rustup component add \
 		clippy \
 		rustfmt
