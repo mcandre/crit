@@ -13,17 +13,11 @@ fn doc() {
 /// Security audit
 fn audit() {
     tinyrick::deps(cargo_audit);
-    tinyrick::deps(snyk);
 }
 
 /// Run cargo audit
 fn cargo_audit() {
     tinyrick::exec!("cargo", &["audit"]);
-}
-
-/// Run snyk
-fn snyk() {
-    tinyrick::exec!("snyk", &["test"]);
 }
 
 /// Run clippy
@@ -138,7 +132,6 @@ fn main() {
         uninstall,
         audit,
         cargo_audit,
-        snyk,
         clippy,
         rustfmt,
         unmake,
