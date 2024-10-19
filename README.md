@@ -133,4 +133,4 @@ Some cross-compilation performance tips:
 * [tug](https://github.com/mcandre/tug) automates multi-platform Docker image builds
 * [unmake](https://github.com/mcandre/unmake), a linter for makefiles
 * [WASM](https://webassembly.org/) provides a portable interface for C/C++ code.
-* [xgo](https://github.com/crazy-max/xgo) supports Go projects with native cgo dependencies.
+* [xgo](https://github.com/techknowlogick/xgo) supports Go projects with native cgo dependencies.
