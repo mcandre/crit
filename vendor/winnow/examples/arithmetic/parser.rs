@@ -2,21 +2,21 @@ use std::str::FromStr;
 
 use winnow::prelude::*;
 use winnow::{
-    branch::alt,
-    bytes::one_of,
-    character::{digit1 as digits, space0 as spaces},
-    multi::fold_many0,
-    sequence::delimited,
-    IResult,
+    ascii::{digit1 as digits, multispace0 as multispaces},
+    combinator::alt,
+    combinator::delimited,
+    combinator::fold_repeat,
+    token::one_of,
 };
 
 // Parser definition
 
-pub fn expr(i: &str) -> IResult<&str, i64> {
-    let (i, init) = term(i)?;
+pub fn expr(i: &mut &str) -> PResult<i64> {
+    let init = term.parse_next(i)?;
 
-    fold_many0(
-        (one_of("+-"), term),
+    fold_repeat(
+        0..,
+        (one_of(['+', '-']), term),
         move || init,
         |acc, (op, val): (char, i64)| {
             if op == '+' {
@@ -32,11 +32,12 @@ pub fn expr(i: &str) -> IResult<&str, i64> {
 // We read an initial factor and for each time we find
 // a * or / operator followed by another factor, we do
 // the math by folding everything
-fn term(i: &str) -> IResult<&str, i64> {
-    let (i, init) = factor(i)?;
+fn term(i: &mut &str) -> PResult<i64> {
+    let init = factor.parse_next(i)?;
 
-    fold_many0(
-        (one_of("*/"), factor),
+    fold_repeat(
+        0..,
+        (one_of(['*', '/']), factor),
         move || init,
         |acc, (op, val): (char, i64)| {
             if op == '*' {
@@ -49,53 +50,88 @@ fn term(i: &str) -> IResult<&str, i64> {
     .parse_next(i)
 }
 
-// We transform an integer string into a i64, ignoring surrounding whitespaces
+// We transform an integer string into a i64, ignoring surrounding whitespace
 // We look for a digit suite, and try to convert it.
 // If either str::from_utf8 or FromStr::from_str fail,
 // we fallback to the parens parser defined above
-fn factor(i: &str) -> IResult<&str, i64> {
+fn factor(i: &mut &str) -> PResult<i64> {
     delimited(
-        spaces,
-        alt((
-            digits.map_res(FromStr::from_str),
-            delimited('(', expr, ')'),
-            parens,
-        )),
-        spaces,
+        multispaces,
+        alt((digits.try_map(FromStr::from_str), parens)),
+        multispaces,
     )
     .parse_next(i)
 }
 
-// We parse any expr surrounded by parens, ignoring all whitespaces around those
-fn parens(i: &str) -> IResult<&str, i64> {
+// We parse any expr surrounded by parens, ignoring all whitespace around those
+fn parens(i: &mut &str) -> PResult<i64> {
     delimited('(', expr, ')').parse_next(i)
 }
 
 #[test]
 fn factor_test() {
-    assert_eq!(factor("3"), Ok(("", 3)));
-    assert_eq!(factor(" 12"), Ok(("", 12)));
-    assert_eq!(factor("537  "), Ok(("", 537)));
-    assert_eq!(factor("  24   "), Ok(("", 24)));
+    let input = "3";
+    let expected = Ok(("", 3));
+    assert_eq!(factor.parse_peek(input), expected);
+
+    let input = " 12";
+    let expected = Ok(("", 12));
+    assert_eq!(factor.parse_peek(input), expected);
+
+    let input = "537 ";
+    let expected = Ok(("", 537));
+    assert_eq!(factor.parse_peek(input), expected);
+
+    let input = "  24     ";
+    let expected = Ok(("", 24));
+    assert_eq!(factor.parse_peek(input), expected);
 }
 
 #[test]
 fn term_test() {
-    assert_eq!(term(" 12 *2 /  3"), Ok(("", 8)));
-    assert_eq!(term(" 2* 3  *2 *2 /  3"), Ok(("", 8)));
-    assert_eq!(term(" 48 /  3/2"), Ok(("", 8)));
+    let input = " 12 *2 /  3";
+    let expected = Ok(("", 8));
+    assert_eq!(term.parse_peek(input), expected);
+
+    let input = " 12 *2 /  3";
+    let expected = Ok(("", 8));
+    assert_eq!(term.parse_peek(input), expected);
+
+    let input = " 2* 3  *2 *2 /  3";
+    let expected = Ok(("", 8));
+    assert_eq!(term.parse_peek(input), expected);
+
+    let input = " 48 /  3/2";
+    let expected = Ok(("", 8));
+    assert_eq!(term.parse_peek(input), expected);
 }
 
 #[test]
 fn expr_test() {
-    assert_eq!(expr(" 1 +  2 "), Ok(("", 3)));
-    assert_eq!(expr(" 12 + 6 - 4+  3"), Ok(("", 17)));
-    assert_eq!(expr(" 1 + 2*3 + 4"), Ok(("", 11)));
+    let input = " 1 +  2 ";
+    let expected = Ok(("", 3));
+    assert_eq!(expr.parse_peek(input), expected);
+
+    let input = " 12 + 6 - 4+  3";
+    let expected = Ok(("", 17));
+    assert_eq!(expr.parse_peek(input), expected);
+
+    let input = " 1 + 2*3 + 4";
+    let expected = Ok(("", 11));
+    assert_eq!(expr.parse_peek(input), expected);
 }
 
 #[test]
 fn parens_test() {
-    assert_eq!(expr(" (  2 )"), Ok(("", 2)));
-    assert_eq!(expr(" 2* (  3 + 4 ) "), Ok(("", 14)));
-    assert_eq!(expr("  2*2 / ( 5 - 1) + 3"), Ok(("", 4)));
+    let input = " (  2 )";
+    let expected = Ok(("", 2));
+    assert_eq!(expr.parse_peek(input), expected);
+
+    let input = " 2* (  3 + 4 ) ";
+    let expected = Ok(("", 14));
+    assert_eq!(expr.parse_peek(input), expected);
+
+    let input = "  2*2 / ( 5 - 1) + 3";
+    let expected = Ok(("", 4));
+    assert_eq!(expr.parse_peek(input), expected);
 }

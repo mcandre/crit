@@ -11,13 +11,14 @@
 
 [package]
 edition = "2021"
-rust-version = "1.60.0"
+rust-version = "1.64.0"
 name = "winnow"
-version = "0.4.1"
+version = "0.5.34"
 include = [
     "build.rs",
     "src/**/*",
     "Cargo.toml",
+    "Cargo.lock",
     "LICENSE*",
     "README.md",
     "benches/**/*",
@@ -38,55 +39,61 @@ license = "MIT"
 repository = "https://github.com/winnow-rs/winnow"
 
 [package.metadata.docs.rs]
+cargo-args = [
+    "-Zunstable-options",
+    "-Zrustdoc-scrape-examples",
+]
 features = ["unstable-doc"]
 rustdoc-args = [
     "--cfg",
     "docsrs",
 ]
-cargo-args = [
-    "-Zunstable-options",
-    "-Zrustdoc-scrape-examples",
-]
 
 [[package.metadata.release.pre-release-replacements]]
 file = "CHANGELOG.md"
-search = "Unreleased"
+min = 1
 replace = "{{version}}"
-min = 1
+search = "Unreleased"
 
 [[package.metadata.release.pre-release-replacements]]
-file = "CHANGELOG.md"
-search = '\.\.\.HEAD'
-replace = "...{{tag_name}}"
 exactly = 1
+file = "CHANGELOG.md"
+replace = "...{{tag_name}}"
+search = '\.\.\.HEAD'
 
 [[package.metadata.release.pre-release-replacements]]
 file = "CHANGELOG.md"
-search = "ReleaseDate"
-replace = "{{date}}"
 min = 1
+replace = "{{date}}"
+search = "ReleaseDate"
 
 [[package.metadata.release.pre-release-replacements]]
+exactly = 1
 file = "CHANGELOG.md"
-search = "<!-- next-header -->"
 replace = """
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 """
-exactly = 1
+search = "<!-- next-header -->"
 
 [[package.metadata.release.pre-release-replacements]]
+exactly = 1
 file = "CHANGELOG.md"
-search = "<!-- next-url -->"
 replace = """
 <!-- next-url -->
 [Unreleased]: https://github.com/winnow-rs/winnow/compare/{{tag_name}}...HEAD"""
+search = "<!-- next-url -->"
+
+[[package.metadata.release.pre-release-replacements]]
 exactly = 1
+file = "src/lib.rs"
+replace = "blob/v{{version}}/CHANGELOG.md"
+search = 'blob/v.+\..+\..+/CHANGELOG.md'
 
 [profile.bench]
 lto = true
 codegen-units = 1
-debug = true
+debug = 2
 
 [[example]]
 name = "arithmetic"
@@ -141,9 +148,22 @@ required-features = ["alloc"]
 name = "arithmetic"
 path = "examples/arithmetic/bench.rs"
 harness = false
+required-features = ["alloc"]
 
 [[bench]]
 name = "contains_token"
+harness = false
+
+[[bench]]
+name = "find_slice"
+harness = false
+
+[[bench]]
+name = "iter"
+harness = false
+
+[[bench]]
+name = "next_slice"
 harness = false
 
 [[bench]]
@@ -168,33 +188,32 @@ path = "examples/json/bench.rs"
 harness = false
 required-features = ["std"]
 
-[dependencies.anstyle]
-version = "0.2.5"
+[dependencies.anstream]
+version = "0.3.2"
 optional = true
 
-[dependencies.concolor]
-version = "0.0.8"
-features = ["auto"]
+[dependencies.anstyle]
+version = "1.0.1"
 optional = true
 
 [dependencies.is-terminal]
-version = "0.4.3"
+version = "0.4.9"
 optional = true
 
 [dependencies.memchr]
-version = "2.3"
+version = "2.5"
 optional = true
 default-features = false
 
 [dependencies.terminal_size]
-version = "0.2.3"
+version = "0.2.6"
 optional = true
 
 [dev-dependencies.circular]
 version = "0.3.0"
 
 [dev-dependencies.criterion]
-version = "0.3.5"
+version = "0.5.1"
 
 [dev-dependencies.doc-comment]
 version = "0.3"
@@ -206,10 +225,13 @@ version = "0.5.7"
 version = "0.3.0"
 
 [dev-dependencies.proptest]
-version = "1.0.0"
+version = "1.2.0"
+
+[dev-dependencies.rustc-hash]
+version = "1.1.0"
 
 [dev-dependencies.snapbox]
-version = "0.4.6"
+version = "0.4.11"
 features = ["examples"]
 
 [dev-dependencies.term-transcript]
@@ -218,10 +240,10 @@ version = "0.2.0"
 [features]
 alloc = []
 debug = [
+    "dep:anstream",
     "dep:anstyle",
     "dep:is-terminal",
     "dep:terminal_size",
-    "dep:concolor",
 ]
 default = ["std"]
 simd = ["dep:memchr"]

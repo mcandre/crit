@@ -2,7 +2,7 @@
 //! This module encapsulates the `unsafe` access to `hashbrown::raw::RawTable`,
 //! mostly in dealing with its bucket "pointers".
 
-use super::{equivalent, Bucket, Entry, HashValue, IndexMapCore, VacantEntry};
+use super::{equivalent, get_hash, Bucket, Entry, HashValue, IndexMapCore, VacantEntry};
 use core::fmt;
 use core::mem::replace;
 use hashbrown::raw::RawTable;
@@ -26,7 +26,7 @@ pub(super) struct DebugIndices<'a>(pub &'a RawTable<usize>);
 impl fmt::Debug for DebugIndices<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // SAFETY: we're not letting any of the buckets escape this function
-        let indices = unsafe { self.0.iter().map(|raw_bucket| raw_bucket.read()) };
+        let indices = unsafe { self.0.iter().map(|raw_bucket| *raw_bucket.as_ref()) };
         f.debug_list().entries(indices).finish()
     }
 }
@@ -38,11 +38,37 @@ impl<K, V> IndexMapCore<K, V> {
         unsafe {
             let offset = end - start;
             for bucket in self.indices.iter() {
-                let i = bucket.read();
-                if i >= end {
-                    bucket.write(i - offset);
-                } else if i >= start {
+                let i = bucket.as_mut();
+                if *i >= end {
+                    *i -= offset;
+                } else if *i >= start {
                     self.indices.erase(bucket);
+                }
+            }
+        }
+    }
+
+    /// Search for a key in the table and return `Ok(entry_index)` if found.
+    /// Otherwise, insert the key and return `Err(new_index)`.
+    ///
+    /// Note that hashbrown may resize the table to reserve space for insertion,
+    /// even before checking if it's already present, so this is somewhat biased
+    /// towards new items.
+    pub(crate) fn find_or_insert(&mut self, hash: HashValue, key: &K) -> Result<usize, usize>
+    where
+        K: Eq,
+    {
+        let hash = hash.get();
+        let eq = equivalent(key, &self.entries);
+        let hasher = get_hash(&self.entries);
+        // SAFETY: We're not mutating between find and read/insert.
+        unsafe {
+            match self.indices.find_or_find_insert_slot(hash, eq, hasher) {
+                Ok(raw_bucket) => Ok(*raw_bucket.as_ref()),
+                Err(slot) => {
+                    let index = self.indices.len();
+                    self.indices.insert_in_slot(hash, slot, index);
+                    Err(index)
                 }
             }
         }
@@ -73,29 +99,6 @@ impl<K, V> IndexMapCore<K, V> {
         // SAFETY: we're not letting any of the buckets escape this function,
         // only the item references that are appropriately bound to `&mut self`.
         unsafe { self.indices.iter().map(|bucket| bucket.as_mut()) }
-    }
-
-    /// Return the raw bucket for the given index
-    fn find_index(&self, index: usize) -> RawBucket {
-        // We'll get a "nice" bounds-check from indexing `self.entries`,
-        // and then we expect to find it in the table as well.
-        let hash = self.entries[index].hash.get();
-        self.indices
-            .find(hash, move |&i| i == index)
-            .expect("index not found")
-    }
-
-    pub(crate) fn swap_indices(&mut self, a: usize, b: usize) {
-        // SAFETY: Can't take two `get_mut` references from one table, so we
-        // must use raw buckets to do the swap. This is still safe because we
-        // are locally sure they won't dangle, and we write them individually.
-        unsafe {
-            let raw_bucket_a = self.find_index(a);
-            let raw_bucket_b = self.find_index(b);
-            raw_bucket_a.write(b);
-            raw_bucket_b.write(a);
-        }
-        self.entries.swap(a, b);
     }
 }
 
@@ -151,7 +154,7 @@ impl<'a, K, V> OccupiedEntry<'a, K, V> {
     #[inline]
     pub fn index(&self) -> usize {
         // SAFETY: we have &mut map keep keeping the bucket stable
-        unsafe { self.raw_bucket.read() }
+        unsafe { *self.raw_bucket.as_ref() }
     }
 
     /// Converts into a mutable reference to the entry's value in the map,
@@ -171,7 +174,7 @@ impl<'a, K, V> OccupiedEntry<'a, K, V> {
     pub fn swap_remove_entry(self) -> (K, V) {
         // SAFETY: This is safe because it can only happen once (self is consumed)
         // and map.indices have not been modified since entry construction
-        let index = unsafe { self.map.indices.remove(self.raw_bucket) };
+        let (index, _slot) = unsafe { self.map.indices.remove(self.raw_bucket) };
         self.map.swap_remove_finish(index)
     }
 
@@ -185,7 +188,7 @@ impl<'a, K, V> OccupiedEntry<'a, K, V> {
     pub fn shift_remove_entry(self) -> (K, V) {
         // SAFETY: This is safe because it can only happen once (self is consumed)
         // and map.indices have not been modified since entry construction
-        let index = unsafe { self.map.indices.remove(self.raw_bucket) };
+        let (index, _slot) = unsafe { self.map.indices.remove(self.raw_bucket) };
         self.map.shift_remove_finish(index)
     }
 }

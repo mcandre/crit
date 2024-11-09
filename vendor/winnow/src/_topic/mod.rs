@@ -3,6 +3,7 @@
 //! These are short recipes for accomplishing common tasks.
 //!
 //! - [Why `winnow`?][why]
+//! - [Migrating from `nom`][nom]
 //! - Formats:
 //!   - [Elements of Programming Languages][language]
 //!   - [Arithmetic][arithmetic]
@@ -12,13 +13,16 @@
 //!   - [HTTP][http]
 //! - Special Topics:
 //!   - [Implementing `FromStr`][fromstr]
+//!   - [Performance][performance]
 //!   - [Parsing Partial Input][partial]
-//!   - [Custom stream][stream]
+//!   - [Custom stream or token][stream]
 //!   - [Custom errors][error]
 //!
 //! See also parsers written with `winnow`:
 //!
 //! - [`toml_edit`](https://crates.io/crates/toml_edit)
+//! - [`hcl-edit`](https://crates.io/crates/hcl-edit)
+#![allow(clippy::std_instead_of_core)]
 
 pub mod arithmetic;
 pub mod error;
@@ -27,7 +31,9 @@ pub mod http;
 pub mod ini;
 pub mod json;
 pub mod language;
+pub mod nom;
 pub mod partial;
+pub mod performance;
 pub mod s_expression;
 pub mod stream;
 pub mod why;
