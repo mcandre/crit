@@ -1,11 +1,11 @@
 # BUILDTIME REQUIREMENTS
 
 * [Docker](https://www.docker.com/) 20.10.12+
-* [GNU](https://www.gnu.org/software/make/) / [BSD](https://man.freebsd.org/cgi/man.cgi?make(1)) make
+* [POSIX](https://pubs.opengroup.org/onlinepubs/9799919799/) compatible [make](https://en.wikipedia.org/wiki/Make_(software))
 * [rustup](https://rustup.rs/) 1.25.2+
 * [Rust](https://www.rust-lang.org/en-US/) 1.75.0+
-* POSIX compatible [tar](https://pubs.opengroup.org/onlinepubs/7908799/xcu/tar.html)
-* Provision additional dev tools with `make -j 4`
+* [POSIX](https://pubs.opengroup.org/onlinepubs/9799919799/) compatible [tar](https://en.wikipedia.org/wiki/Tar_(computing))
+* Provision additional dev tools with `make [-j 4]`
 
 ## Recommended
 
@@ -15,12 +15,11 @@
 * [ASDF](https://asdf-vm.com/) 0.10 (run `asdf reshim` after provisioning)
 * [cargo-cache](https://crates.io/crates/cargo-cache)
 * [direnv](https://direnv.net/) 2
-* POSIX compatible [tar](https://pubs.opengroup.org/onlinepubs/7908799/xcu/tar.html)
+* [GNU](https://www.gnu.org/)/[BSD](https://en.wikipedia.org/wiki/Berkeley_Software_Distribution) [make](https://en.wikipedia.org/wiki/Make_(software))
+* [GNU](https://www.gnu.org/)/[BSD](https://en.wikipedia.org/wiki/Berkeley_Software_Distribution) [tar](https://en.wikipedia.org/wiki/Tar_(computing))
+* [GNU](https://www.gnu.org/) [time](https://en.wikipedia.org/wiki/Time_(Unix))
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
-* GNU compatible [time](https://www.gnu.org/software/time/)
-* a UNIX environment, such as macOS, Linux, BSD, [WSL](https://learn.microsoft.com/en-us/windows/wsl/), etc.
-
-Non-UNIX environments may produce subtle adverse effects when linting or generating application ports.
+* a [UNIX](https://en.wikipedia.org/wiki/Unix)-like environment
 
 # INSTALL BINARIES FROM SOURCE
 
