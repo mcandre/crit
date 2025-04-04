@@ -1,6 +1,6 @@
 # BUILDTIME REQUIREMENTS
 
-* [cross](https://crates.io/crates/cross) 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa+
+* [cross](https://crates.io/crates/cross) HEAD
 * [Docker](https://www.docker.com/) 28.0.1+
 * [POSIX](https://pubs.opengroup.org/onlinepubs/9799919799/) compatible [make](https://en.wikipedia.org/wiki/Make_(software))
 * [rustup](https://rustup.rs/) 1.28.1+

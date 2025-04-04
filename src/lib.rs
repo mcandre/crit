@@ -151,12 +151,12 @@ pub fn get_applications(feature_exclusion_pattern: regex::Regex) -> Result<Vec<S
         .and_then(|e| {
             e.get("bin")
                 .ok_or("error: no binaries declared in Cargo.toml".to_string())
-                .map(|e2| e2.clone())
+                .cloned()
         })
         .and_then(|e| {
             e.as_array()
                 .ok_or("error: binary section not an array in Cargo.toml".to_string())
-                .map(|e2| e2.clone())
+                .cloned()
         });
 
     let bin_sections: Vec<toml::Value> = bin_sections_result?;
