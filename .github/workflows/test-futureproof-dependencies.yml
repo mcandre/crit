@@ -12,6 +12,10 @@ jobs:
     - uses: "actions-rust-lang/setup-rust-toolchain@v1"
       with:
         toolchain: "1.86.0"
-    - name: "provision dev tools"
-      run: "make -j 4 crates"
-    - run: "tinyrick test"
+    - name: "provision dev dependencies"
+      run: |
+        make -j 4 crates
+        cargo install --force --path .
+    - run: |
+        cd example
+        crit -l
