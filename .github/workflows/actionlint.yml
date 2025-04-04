@@ -9,5 +9,4 @@ jobs:
     runs-on: "ubuntu-24.04"
     steps:
     - uses: "actions/checkout@v4"
-    - name: "actionlint"
-      uses: "raven-actions/actionlint@v2"
+    - uses: "raven-actions/actionlint@v2"
