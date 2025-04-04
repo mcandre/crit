@@ -1,11 +1,11 @@
 ---
-name: "Test"
+name: "Test-Futureproof-Dependencies"
 on: # yamllint disable-line rule:truthy
   push:
   pull_request:
   workflow_dispatch:
 jobs:
-  Test:
+  Test-Futureproof-Dependencies:
     runs-on: "ubuntu-24.04"
     steps:
     - uses: "actions/checkout@v4"
