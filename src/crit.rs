@@ -118,7 +118,7 @@ fn main() {
 
     let enabled_targets: Vec<&str> = targets
         .iter()
-        .filter(|(_, &enabled)| enabled)
+        .filter(|&(_, &enabled)| enabled)
         .map(|(target, _)| target as &str)
         .collect();
 
