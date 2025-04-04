@@ -2,7 +2,8 @@
 name = "crit"
 description = "Rust cross-compiler"
 version = "0.0.8"
-authors = ["Andrew Pennebaker <andrew.pennebaker@gmail.com>"]
+edition = "2018"
+authors = ["Andrew Pennebaker <n4jm4@pm.me>"]
 license = "BSD-2-Clause"
 homepage = "https://github.com/mcandre/crit"
 
