@@ -55,10 +55,10 @@ BSD-2-Clause
 
 # RUNTIME REQUIREMENTS
 
-* [rustup](https://rustup.rs/) 1.25.2+
-* [Rust](https://www.rust-lang.org/en-US/) 1.75.0+
-* [cross](https://crates.io/crates/cross) 0.2.5+
-* [Docker](https://www.docker.com/) 20.10.23+
+* [cross](https://crates.io/crates/cross) 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa+
+* [Docker](https://www.docker.com/) 28.0.1+
+* [rustup](https://rustup.rs/) 1.28.1+
+* [Rust](https://www.rust-lang.org/en-US/) 1.86.0+
 
 ## Recommended
 

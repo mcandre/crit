@@ -1,9 +1,10 @@
 # BUILDTIME REQUIREMENTS
 
-* [Docker](https://www.docker.com/) 20.10.12+
+* [cross](https://crates.io/crates/cross) 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa+
+* [Docker](https://www.docker.com/) 28.0.1+
 * [POSIX](https://pubs.opengroup.org/onlinepubs/9799919799/) compatible [make](https://en.wikipedia.org/wiki/Make_(software))
-* [rustup](https://rustup.rs/) 1.25.2+
-* [Rust](https://www.rust-lang.org/en-US/) 1.75.0+
+* [rustup](https://rustup.rs/) 1.28.1+
+* [Rust](https://www.rust-lang.org/en-US/) 1.86.0+
 * [POSIX](https://pubs.opengroup.org/onlinepubs/9799919799/) compatible [tar](https://en.wikipedia.org/wiki/Tar_(computing))
 * Provision additional dev tools with `make [-j 4]`
 
