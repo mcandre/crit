@@ -9,10 +9,10 @@ Hello World!
 
 # REQUIREMENTS
 
-* [Rust](https://www.rust-lang.org/en-US/) 1.64+
-* [cross](https://crates.io/crates/cross) 0.2.5+
-* [Docker](https://www.docker.com/) 20.10.23+
-* [crit](https://github.com/mcandre/crit)
+* [rustup](https://rustup.rs/) 1.28.1+
+* [Rust](https://www.rust-lang.org/en-US/) 1.86.0+
+* [cross](https://crates.io/crates/cross) HEAD
+* [Docker](https://www.docker.com/) 28.0.1+
 
 ## Recommended
 

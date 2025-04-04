@@ -11,7 +11,7 @@ crates:
 	cargo install --force \
 		cargo-audit \
 		tinyrick@0.0.14 \
-		unmake@0.0.16
+		unmake@0.0.18
 	cargo install --force cross --git https://github.com/cross-rs/cross
 
 rustup-components:
