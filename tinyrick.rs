@@ -59,11 +59,13 @@ fn uninstall() {
 fn test() {
     tinyrick::deps(install);
 
-    assert!(tinyrick::exec_mut!("crit", &["-l"])
-        .current_dir("example")
-        .status()
-        .unwrap()
-        .success());
+    assert!(
+        tinyrick::exec_mut!("crit", &["-l"])
+            .current_dir("example")
+            .status()
+            .unwrap()
+            .success()
+    );
 }
 
 /// Build: Doc, lint, test, and compile
@@ -99,19 +101,23 @@ fn publish() {
 
 /// Clean example project
 fn clean_example() {
-    assert!(tinyrick::exec_mut!("crit", &["-c"])
-        .current_dir("example")
-        .status()
-        .unwrap()
-        .success());
+    assert!(
+        tinyrick::exec_mut!("crit", &["-c"])
+            .current_dir("example")
+            .status()
+            .unwrap()
+            .success()
+    );
 }
 
 /// Clean ports
 fn clean_ports() {
-    assert!(tinyrick::exec_mut!("crit", &["-c"])
-        .status()
-        .unwrap()
-        .success());
+    assert!(
+        tinyrick::exec_mut!("crit", &["-c"])
+            .status()
+            .unwrap()
+            .success()
+    );
 }
 
 /// Clean workspaces

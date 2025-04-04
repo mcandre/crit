@@ -5,7 +5,7 @@ extern crate die;
 extern crate getopts;
 extern crate regex;
 
-use die::{die, Die};
+use die::{Die, die};
 use std::collections;
 use std::env;
 use std::path;
