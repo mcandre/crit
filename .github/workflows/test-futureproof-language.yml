@@ -1,17 +1,17 @@
 ---
-name: "Lint"
+name: "Test-Futureproof-Language"
 on: # yamllint disable-line rule:truthy
   push:
   pull_request:
   workflow_dispatch:
 jobs:
-  Lint:
+  Test-Futureproof-Language:
     runs-on: "ubuntu-24.04"
     steps:
     - uses: "actions/checkout@v4"
     - uses: "dtolnay/rust-toolchain@stable"
       with:
-        toolchain: "1.86.0"
+        toolchain: "nightly"
     - name: "provision dev tools"
-      run: "make -j 4"
-    - run: "tinyrick lint"
+      run: "make -j 4 crates"
+    - run: "tinyrick test"
