@@ -46,7 +46,7 @@ fn lint() {
 
 /// Install artifacts
 fn install() {
-    tinyrick::exec!("cargo", &["install", "--force", "--locked", "--path", "."]);
+    tinyrick::exec!("cargo", &["install", "--force", "--path", "."]);
 }
 
 /// Uninstall artifacts
