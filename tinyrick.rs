@@ -44,9 +44,8 @@ fn lint() {
     tinyrick::deps(unmake);
 }
 
-/// Lint, and then install artifacts
+/// Install artifacts
 fn install() {
-    tinyrick::deps(lint);
     tinyrick::exec!("cargo", &["install", "--force", "--locked", "--path", "."]);
 }
 
