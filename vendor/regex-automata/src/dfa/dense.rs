@@ -9,7 +9,7 @@ This module also contains a [`dense::Builder`](Builder) and a
 
 #[cfg(feature = "dfa-build")]
 use core::cmp;
-use core::{convert::TryFrom, fmt, iter, mem::size_of, slice};
+use core::{fmt, iter, mem::size_of, slice};
 
 #[cfg(feature = "dfa-build")]
 use alloc::{
@@ -2340,8 +2340,8 @@ impl<'a> DFA<&'a [u32]> {
         // table, match states and accelerators below. If any validation fails,
         // then we return an error.
         let (dfa, nread) = unsafe { DFA::from_bytes_unchecked(slice)? };
-        dfa.tt.validate(&dfa.special)?;
-        dfa.st.validate(&dfa.tt)?;
+        dfa.tt.validate(&dfa)?;
+        dfa.st.validate(&dfa)?;
         dfa.ms.validate(&dfa)?;
         dfa.accels.validate()?;
         // N.B. dfa.special doesn't have a way to do unchecked deserialization,
@@ -2498,7 +2498,7 @@ impl OwnedDFA {
         self.tt.set(from, byte, to);
     }
 
-    /// An an empty state (a state where all transitions lead to a dead state)
+    /// An empty state (a state where all transitions lead to a dead state)
     /// and return its identifier. The identifier returned is guaranteed to
     /// not point to any other existing state.
     ///
@@ -3593,7 +3593,8 @@ impl<T: AsRef<[u32]>> TransitionTable<T> {
     ///
     /// That is, every state ID can be used to correctly index a state in this
     /// table.
-    fn validate(&self, sp: &Special) -> Result<(), DeserializeError> {
+    fn validate(&self, dfa: &DFA<T>) -> Result<(), DeserializeError> {
+        let sp = &dfa.special;
         for state in self.states() {
             // We check that the ID itself is well formed. That is, if it's
             // a special state then it must actually be a quit, dead, accel,
@@ -3609,6 +3610,13 @@ impl<T: AsRef<[u32]>> TransitionTable<T> {
                     return Err(DeserializeError::generic(
                         "found dense state tagged as special but \
                          wasn't actually special",
+                    ));
+                }
+                if sp.is_match_state(state.id())
+                    && dfa.match_len(state.id()) == 0
+                {
+                    return Err(DeserializeError::generic(
+                        "found match state with zero pattern IDs",
                     ));
                 }
             }
@@ -4127,10 +4135,8 @@ impl<T: AsRef<[u32]>> StartTable<T> {
     /// it against the given transition table (which must be for the same DFA).
     ///
     /// That is, every state ID can be used to correctly index a state.
-    fn validate(
-        &self,
-        tt: &TransitionTable<T>,
-    ) -> Result<(), DeserializeError> {
+    fn validate(&self, dfa: &DFA<T>) -> Result<(), DeserializeError> {
+        let tt = &dfa.tt;
         if !self.universal_start_unanchored.map_or(true, |s| tt.is_valid(s)) {
             return Err(DeserializeError::generic(
                 "found invalid universal unanchored starting state ID",
@@ -4950,6 +4956,74 @@ impl<'a> Iterator for StateSparseTransitionIter<'a> {
 #[derive(Clone, Debug)]
 pub struct BuildError {
     kind: BuildErrorKind,
+}
+
+#[cfg(feature = "dfa-build")]
+impl BuildError {
+    /// Returns true if and only if this error corresponds to an error with DFA
+    /// construction that occurred because of exceeding a size limit.
+    ///
+    /// While this can occur when size limits like [`Config::dfa_size_limit`]
+    /// or [`Config::determinize_size_limit`] are exceeded, this can also occur
+    /// when the number of states or patterns exceeds a hard-coded maximum.
+    /// (Where these maximums are derived based on the values representable by
+    /// [`StateID`] and [`PatternID`].)
+    ///
+    /// This predicate is useful in contexts where you want to distinguish
+    /// between errors related to something provided by an end user (for
+    /// example, an invalid regex pattern) and errors related to configured
+    /// heuristics. For example, building a DFA might be an optimization that
+    /// you want to skip if construction fails because of an exceeded size
+    /// limit, but where you want to bubble up an error if it fails for some
+    /// other reason.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # if cfg!(miri) { return Ok(()); } // miri takes too long
+    /// # if !cfg!(target_pointer_width = "64") { return Ok(()); } // see #1039
+    /// use regex_automata::{dfa::{dense, Automaton}, Input};
+    ///
+    /// let err = dense::Builder::new()
+    ///     .configure(dense::Config::new()
+    ///         .determinize_size_limit(Some(100_000))
+    ///     )
+    ///     .build(r"\w{20}")
+    ///     .unwrap_err();
+    /// // This error occurs because a size limit was exceeded.
+    /// // But things are otherwise valid.
+    /// assert!(err.is_size_limit_exceeded());
+    ///
+    /// let err = dense::Builder::new()
+    ///     .build(r"\bxyz\b")
+    ///     .unwrap_err();
+    /// // This error occurs because a Unicode word boundary
+    /// // was used without enabling heuristic support for it.
+    /// // So... not related to size limits.
+    /// assert!(!err.is_size_limit_exceeded());
+    ///
+    /// let err = dense::Builder::new()
+    ///     .build(r"(xyz")
+    ///     .unwrap_err();
+    /// // This error occurs because the pattern is invalid.
+    /// // So... not related to size limits.
+    /// assert!(!err.is_size_limit_exceeded());
+    ///
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    #[inline]
+    pub fn is_size_limit_exceeded(&self) -> bool {
+        use self::BuildErrorKind::*;
+
+        match self.kind {
+            NFA(_) | Unsupported(_) => false,
+            TooManyStates
+            | TooManyStartStates
+            | TooManyMatchPatternIDs
+            | DFAExceededSizeLimit { .. }
+            | DeterminizeExceededSizeLimit { .. } => true,
+        }
+    }
 }
 
 /// The kind of error that occurred during the construction of a DFA.

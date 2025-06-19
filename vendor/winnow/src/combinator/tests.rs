@@ -966,7 +966,7 @@ fn repeat1_test() {
 fn repeat_till_test() {
     #[allow(clippy::type_complexity)]
     fn multi(i: &[u8]) -> IResult<&[u8], (Vec<&[u8]>, &[u8])> {
-        repeat_till0("abcd", "efgh").parse_peek(i)
+        repeat_till(0.., "abcd", "efgh").parse_peek(i)
     }
 
     let a = b"abcdabcdefghabcd";
@@ -983,6 +983,46 @@ fn repeat_till_test() {
             &&c[..],
             ErrorKind::Many,
             error_position!(&&c[..], ErrorKind::Tag)
+        )))
+    );
+}
+
+#[test]
+#[cfg(feature = "alloc")]
+fn repeat_till_range_test() {
+    #[allow(clippy::type_complexity)]
+    fn multi(i: &str) -> IResult<&str, (Vec<&str>, &str)> {
+        repeat_till(2..=4, "ab", "cd").parse_peek(i)
+    }
+
+    assert_eq!(
+        multi("cd"),
+        Err(ErrMode::Backtrack(error_node_position!(
+            &"cd",
+            ErrorKind::Many,
+            error_position!(&"cd", ErrorKind::Tag)
+        )))
+    );
+    assert_eq!(
+        multi("abcd"),
+        Err(ErrMode::Backtrack(error_node_position!(
+            &"cd",
+            ErrorKind::Many,
+            error_position!(&"cd", ErrorKind::Tag)
+        )))
+    );
+    assert_eq!(multi("ababcd"), Ok(("", (vec!["ab", "ab"], "cd"))));
+    assert_eq!(multi("abababcd"), Ok(("", (vec!["ab", "ab", "ab"], "cd"))));
+    assert_eq!(
+        multi("ababababcd"),
+        Ok(("", (vec!["ab", "ab", "ab", "ab"], "cd")))
+    );
+    assert_eq!(
+        multi("abababababcd"),
+        Err(ErrMode::Backtrack(error_node_position!(
+            &"cd",
+            ErrorKind::Many,
+            error_position!(&"abcd", ErrorKind::Tag)
         )))
     );
 }
@@ -1161,7 +1201,9 @@ fn fold_repeat0_test() {
         acc
     }
     fn multi(i: Partial<&[u8]>) -> IResult<Partial<&[u8]>, Vec<&[u8]>> {
-        fold_repeat(0.., "abcd", Vec::new, fold_into_vec).parse_peek(i)
+        repeat(0.., "abcd")
+            .fold(Vec::new, fold_into_vec)
+            .parse_peek(i)
     }
 
     assert_eq!(
@@ -1199,7 +1241,7 @@ fn fold_repeat0_empty_test() {
         acc
     }
     fn multi_empty(i: Partial<&[u8]>) -> IResult<Partial<&[u8]>, Vec<&[u8]>> {
-        fold_repeat(0.., "", Vec::new, fold_into_vec).parse_peek(i)
+        repeat(0.., "").fold(Vec::new, fold_into_vec).parse_peek(i)
     }
 
     assert_eq!(
@@ -1219,7 +1261,9 @@ fn fold_repeat1_test() {
         acc
     }
     fn multi(i: Partial<&[u8]>) -> IResult<Partial<&[u8]>, Vec<&[u8]>> {
-        fold_repeat(1.., "abcd", Vec::new, fold_into_vec).parse_peek(i)
+        repeat(1.., "abcd")
+            .fold(Vec::new, fold_into_vec)
+            .parse_peek(i)
     }
 
     let a = &b"abcdef"[..];
@@ -1255,7 +1299,9 @@ fn fold_repeat_test() {
         acc
     }
     fn multi(i: Partial<&[u8]>) -> IResult<Partial<&[u8]>, Vec<&[u8]>> {
-        fold_repeat(2..=4, "Abcd", Vec::new, fold_into_vec).parse_peek(i)
+        repeat(2..=4, "Abcd")
+            .fold(Vec::new, fold_into_vec)
+            .parse_peek(i)
     }
 
     let a = &b"Abcdef"[..];

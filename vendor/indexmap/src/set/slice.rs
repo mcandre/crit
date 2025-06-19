@@ -1,5 +1,5 @@
 use super::{Bucket, Entries, IndexSet, IntoIter, Iter};
-use crate::util::try_simplify_range;
+use crate::util::{slice_eq, try_simplify_range};
 
 use alloc::boxed::Box;
 use alloc::vec::Vec;
@@ -8,13 +8,13 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::ops::{self, Bound, Index, RangeBounds};
 
-/// A dynamically-sized slice of values in an `IndexSet`.
+/// A dynamically-sized slice of values in an [`IndexSet`].
 ///
 /// This supports indexed operations much like a `[T]` slice,
 /// but not any hashed operations on the values.
 ///
-/// Unlike `IndexSet`, `Slice` does consider the order for `PartialEq`
-/// and `Eq`, and it also implements `PartialOrd`, `Ord`, and `Hash`.
+/// Unlike `IndexSet`, `Slice` does consider the order for [`PartialEq`]
+/// and [`Eq`], and it also implements [`PartialOrd`], [`Ord`], and [`Hash`].
 #[repr(transparent)]
 pub struct Slice<T> {
     pub(crate) entries: [Bucket<T>],
@@ -59,14 +59,14 @@ impl<T> Slice<T> {
 
     /// Get a value by index.
     ///
-    /// Valid indices are *0 <= index < self.len()*
+    /// Valid indices are `0 <= index < self.len()`.
     pub fn get_index(&self, index: usize) -> Option<&T> {
         self.entries.get(index).map(Bucket::key_ref)
     }
 
     /// Returns a slice of values in the given range of indices.
     ///
-    /// Valid indices are *0 <= index < self.len()*
+    /// Valid indices are `0 <= index < self.len()`.
     pub fn get_range<R: RangeBounds<usize>>(&self, range: R) -> Option<&Self> {
         let range = try_simplify_range(range, self.entries.len())?;
         self.entries.get(range).map(Self::from_slice)
@@ -222,9 +222,48 @@ impl<T: fmt::Debug> fmt::Debug for Slice<T> {
     }
 }
 
-impl<T: PartialEq> PartialEq for Slice<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.len() == other.len() && self.iter().eq(other)
+impl<T, U> PartialEq<Slice<U>> for Slice<T>
+where
+    T: PartialEq<U>,
+{
+    fn eq(&self, other: &Slice<U>) -> bool {
+        slice_eq(&self.entries, &other.entries, |b1, b2| b1.key == b2.key)
+    }
+}
+
+impl<T, U> PartialEq<[U]> for Slice<T>
+where
+    T: PartialEq<U>,
+{
+    fn eq(&self, other: &[U]) -> bool {
+        slice_eq(&self.entries, other, |b, o| b.key == *o)
+    }
+}
+
+impl<T, U> PartialEq<Slice<U>> for [T]
+where
+    T: PartialEq<U>,
+{
+    fn eq(&self, other: &Slice<U>) -> bool {
+        slice_eq(self, &other.entries, |o, b| *o == b.key)
+    }
+}
+
+impl<T, U, const N: usize> PartialEq<[U; N]> for Slice<T>
+where
+    T: PartialEq<U>,
+{
+    fn eq(&self, other: &[U; N]) -> bool {
+        <Self as PartialEq<[U]>>::eq(self, other)
+    }
+}
+
+impl<T, const N: usize, U> PartialEq<Slice<U>> for [T; N]
+where
+    T: PartialEq<U>,
+{
+    fn eq(&self, other: &Slice<U>) -> bool {
+        <[T] as PartialEq<Slice<U>>>::eq(self, other)
     }
 }
 
@@ -293,7 +332,6 @@ impl_index!(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloc::vec::Vec;
 
     #[test]
     fn slice_index() {

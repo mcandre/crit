@@ -9,8 +9,6 @@
 //! A wrapper around the procedural macro API of the compiler's [`proc_macro`]
 //! crate. This library serves two purposes:
 //!
-//! [`proc_macro`]: https://doc.rust-lang.org/proc_macro/
-//!
 //! - **Bring proc-macro-like functionality to other contexts like build.rs and
 //!   main.rs.** Types from `proc_macro` are entirely specific to procedural
 //!   macros and cannot ever exist in code outside of a procedural macro.
@@ -86,24 +84,28 @@
 //! a different thread.
 
 // Proc-macro2 types in rustdoc of other crates get linked to here.
-#![doc(html_root_url = "https://docs.rs/proc-macro2/1.0.76")]
+#![doc(html_root_url = "https://docs.rs/proc-macro2/1.0.95")]
 #![cfg_attr(any(proc_macro_span, super_unstable), feature(proc_macro_span))]
 #![cfg_attr(super_unstable, feature(proc_macro_def_site))]
-#![cfg_attr(doc_cfg, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![deny(unsafe_op_in_unsafe_fn)]
 #![allow(
     clippy::cast_lossless,
     clippy::cast_possible_truncation,
     clippy::checked_conversions,
     clippy::doc_markdown,
+    clippy::elidable_lifetime_names,
+    clippy::incompatible_msrv,
     clippy::items_after_statements,
     clippy::iter_without_into_iter,
     clippy::let_underscore_untyped,
     clippy::manual_assert,
     clippy::manual_range_contains,
+    clippy::missing_panics_doc,
     clippy::missing_safety_doc,
     clippy::must_use_candidate,
     clippy::needless_doctest_main,
+    clippy::needless_lifetimes,
     clippy::new_without_default,
     clippy::return_self_not_must_use,
     clippy::shadow_unrelated,
@@ -160,18 +162,21 @@ mod imp;
 mod location;
 
 use crate::extra::DelimSpan;
-use crate::marker::Marker;
+use crate::marker::{ProcMacroAutoTraits, MARKER};
 use core::cmp::Ordering;
 use core::fmt::{self, Debug, Display};
 use core::hash::{Hash, Hasher};
+#[cfg(span_locations)]
+use core::ops::Range;
 use core::ops::RangeBounds;
 use core::str::FromStr;
 use std::error::Error;
+use std::ffi::CStr;
 #[cfg(procmacro2_semver_exempt)]
 use std::path::PathBuf;
 
 #[cfg(span_locations)]
-#[cfg_attr(doc_cfg, doc(cfg(feature = "span-locations")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "span-locations")))]
 pub use crate::location::LineColumn;
 
 /// An abstract stream of tokens, or more concretely a sequence of token trees.
@@ -184,27 +189,27 @@ pub use crate::location::LineColumn;
 #[derive(Clone)]
 pub struct TokenStream {
     inner: imp::TokenStream,
-    _marker: Marker,
+    _marker: ProcMacroAutoTraits,
 }
 
 /// Error returned from `TokenStream::from_str`.
 pub struct LexError {
     inner: imp::LexError,
-    _marker: Marker,
+    _marker: ProcMacroAutoTraits,
 }
 
 impl TokenStream {
     fn _new(inner: imp::TokenStream) -> Self {
         TokenStream {
             inner,
-            _marker: Marker,
+            _marker: MARKER,
         }
     }
 
     fn _new_fallback(inner: fallback::TokenStream) -> Self {
         TokenStream {
-            inner: inner.into(),
-            _marker: Marker,
+            inner: imp::TokenStream::from(inner),
+            _marker: MARKER,
         }
     }
 
@@ -239,27 +244,29 @@ impl FromStr for TokenStream {
     type Err = LexError;
 
     fn from_str(src: &str) -> Result<TokenStream, LexError> {
-        let e = src.parse().map_err(|e| LexError {
-            inner: e,
-            _marker: Marker,
-        })?;
-        Ok(TokenStream::_new(e))
+        match imp::TokenStream::from_str_checked(src) {
+            Ok(tokens) => Ok(TokenStream::_new(tokens)),
+            Err(lex) => Err(LexError {
+                inner: lex,
+                _marker: MARKER,
+            }),
+        }
     }
 }
 
 #[cfg(feature = "proc-macro")]
-#[cfg_attr(doc_cfg, doc(cfg(feature = "proc-macro")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "proc-macro")))]
 impl From<proc_macro::TokenStream> for TokenStream {
     fn from(inner: proc_macro::TokenStream) -> Self {
-        TokenStream::_new(inner.into())
+        TokenStream::_new(imp::TokenStream::from(inner))
     }
 }
 
 #[cfg(feature = "proc-macro")]
-#[cfg_attr(doc_cfg, doc(cfg(feature = "proc-macro")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "proc-macro")))]
 impl From<TokenStream> for proc_macro::TokenStream {
     fn from(inner: TokenStream) -> Self {
-        inner.inner.into()
+        proc_macro::TokenStream::from(inner.inner)
     }
 }
 
@@ -331,76 +338,25 @@ impl Display for LexError {
 
 impl Error for LexError {}
 
-/// The source file of a given `Span`.
-///
-/// This type is semver exempt and not exposed by default.
-#[cfg(all(procmacro2_semver_exempt, any(not(wrap_proc_macro), super_unstable)))]
-#[cfg_attr(doc_cfg, doc(cfg(procmacro2_semver_exempt)))]
-#[derive(Clone, PartialEq, Eq)]
-pub struct SourceFile {
-    inner: imp::SourceFile,
-    _marker: Marker,
-}
-
-#[cfg(all(procmacro2_semver_exempt, any(not(wrap_proc_macro), super_unstable)))]
-impl SourceFile {
-    fn _new(inner: imp::SourceFile) -> Self {
-        SourceFile {
-            inner,
-            _marker: Marker,
-        }
-    }
-
-    /// Get the path to this source file.
-    ///
-    /// ### Note
-    ///
-    /// If the code span associated with this `SourceFile` was generated by an
-    /// external macro, this may not be an actual path on the filesystem. Use
-    /// [`is_real`] to check.
-    ///
-    /// Also note that even if `is_real` returns `true`, if
-    /// `--remap-path-prefix` was passed on the command line, the path as given
-    /// may not actually be valid.
-    ///
-    /// [`is_real`]: #method.is_real
-    pub fn path(&self) -> PathBuf {
-        self.inner.path()
-    }
-
-    /// Returns `true` if this source file is a real source file, and not
-    /// generated by an external macro's expansion.
-    pub fn is_real(&self) -> bool {
-        self.inner.is_real()
-    }
-}
-
-#[cfg(all(procmacro2_semver_exempt, any(not(wrap_proc_macro), super_unstable)))]
-impl Debug for SourceFile {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        Debug::fmt(&self.inner, f)
-    }
-}
-
 /// A region of source code, along with macro expansion information.
 #[derive(Copy, Clone)]
 pub struct Span {
     inner: imp::Span,
-    _marker: Marker,
+    _marker: ProcMacroAutoTraits,
 }
 
 impl Span {
     fn _new(inner: imp::Span) -> Self {
         Span {
             inner,
-            _marker: Marker,
+            _marker: MARKER,
         }
     }
 
     fn _new_fallback(inner: fallback::Span) -> Self {
         Span {
-            inner: inner.into(),
-            _marker: Marker,
+            inner: imp::Span::from(inner),
+            _marker: MARKER,
         }
     }
 
@@ -424,7 +380,7 @@ impl Span {
     ///
     /// This method is semver exempt and not exposed by default.
     #[cfg(procmacro2_semver_exempt)]
-    #[cfg_attr(doc_cfg, doc(cfg(procmacro2_semver_exempt)))]
+    #[cfg_attr(docsrs, doc(cfg(procmacro2_semver_exempt)))]
     pub fn def_site() -> Self {
         Span::_new(imp::Span::def_site())
     }
@@ -463,13 +419,19 @@ impl Span {
         self.unwrap()
     }
 
-    /// The original source file into which this span points.
+    /// Returns the span's byte position range in the source file.
     ///
-    /// This method is semver exempt and not exposed by default.
-    #[cfg(all(procmacro2_semver_exempt, any(not(wrap_proc_macro), super_unstable)))]
-    #[cfg_attr(doc_cfg, doc(cfg(procmacro2_semver_exempt)))]
-    pub fn source_file(&self) -> SourceFile {
-        SourceFile::_new(self.inner.source_file())
+    /// This method requires the `"span-locations"` feature to be enabled.
+    ///
+    /// When executing in a procedural macro context, the returned range is only
+    /// accurate if compiled with a nightly toolchain. The stable toolchain does
+    /// not have this information available. When executing outside of a
+    /// procedural macro, such as main.rs or build.rs, the byte range is always
+    /// accurate regardless of toolchain.
+    #[cfg(span_locations)]
+    #[cfg_attr(docsrs, doc(cfg(feature = "span-locations")))]
+    pub fn byte_range(&self) -> Range<usize> {
+        self.inner.byte_range()
     }
 
     /// Get the starting line/column in the source file for this span.
@@ -482,7 +444,7 @@ impl Span {
     /// outside of a procedural macro, such as main.rs or build.rs, the
     /// line/column are always meaningful regardless of toolchain.
     #[cfg(span_locations)]
-    #[cfg_attr(doc_cfg, doc(cfg(feature = "span-locations")))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "span-locations")))]
     pub fn start(&self) -> LineColumn {
         self.inner.start()
     }
@@ -497,9 +459,36 @@ impl Span {
     /// outside of a procedural macro, such as main.rs or build.rs, the
     /// line/column are always meaningful regardless of toolchain.
     #[cfg(span_locations)]
-    #[cfg_attr(doc_cfg, doc(cfg(feature = "span-locations")))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "span-locations")))]
     pub fn end(&self) -> LineColumn {
         self.inner.end()
+    }
+
+    /// The path to the source file in which this span occurs, for display
+    /// purposes.
+    ///
+    /// This might not correspond to a valid file system path. It might be
+    /// remapped, or might be an artificial path such as `"<macro expansion>"`.
+    ///
+    /// This method is semver exempt and not exposed by default.
+    #[cfg(all(procmacro2_semver_exempt, any(not(wrap_proc_macro), super_unstable)))]
+    #[cfg_attr(docsrs, doc(cfg(procmacro2_semver_exempt)))]
+    pub fn file(&self) -> String {
+        self.inner.file()
+    }
+
+    /// The path to the source file in which this span occurs on disk.
+    ///
+    /// This is the actual path on disk. It is unaffected by path remapping.
+    ///
+    /// This path should not be embedded in the output of the macro; prefer
+    /// `file()` instead.
+    ///
+    /// This method is semver exempt and not exposed by default.
+    #[cfg(all(procmacro2_semver_exempt, any(not(wrap_proc_macro), super_unstable)))]
+    #[cfg_attr(docsrs, doc(cfg(procmacro2_semver_exempt)))]
+    pub fn local_file(&self) -> Option<PathBuf> {
+        self.inner.local_file()
     }
 
     /// Create a new span encompassing `self` and `other`.
@@ -509,8 +498,6 @@ impl Span {
     /// Warning: the underlying [`proc_macro::Span::join`] method is
     /// nightly-only. When called from within a procedural macro not using a
     /// nightly compiler, this method will always return `None`.
-    ///
-    /// [`proc_macro::Span::join`]: https://doc.rust-lang.org/proc_macro/struct.Span.html#method.join
     pub fn join(&self, other: Span) -> Option<Span> {
         self.inner.join(other.inner).map(Span::_new)
     }
@@ -519,7 +506,7 @@ impl Span {
     ///
     /// This method is semver exempt and not exposed by default.
     #[cfg(procmacro2_semver_exempt)]
-    #[cfg_attr(doc_cfg, doc(cfg(procmacro2_semver_exempt)))]
+    #[cfg_attr(docsrs, doc(cfg(procmacro2_semver_exempt)))]
     pub fn eq(&self, other: &Span) -> bool {
         self.inner.eq(&other.inner)
     }
@@ -659,13 +646,25 @@ pub enum Delimiter {
     Brace,
     /// `[ ... ]`
     Bracket,
-    /// `Ø ... Ø`
+    /// `∅ ... ∅`
     ///
-    /// An implicit delimiter, that may, for example, appear around tokens
+    /// An invisible delimiter, that may, for example, appear around tokens
     /// coming from a "macro variable" `$var`. It is important to preserve
     /// operator priorities in cases like `$var * 3` where `$var` is `1 + 2`.
-    /// Implicit delimiters may not survive roundtrip of a token stream through
+    /// Invisible delimiters may not survive roundtrip of a token stream through
     /// a string.
+    ///
+    /// <div class="warning">
+    ///
+    /// Note: rustc currently can ignore the grouping of tokens delimited by `None` in the output
+    /// of a proc_macro. Only `None`-delimited groups created by a macro_rules macro in the input
+    /// of a proc_macro macro are preserved, and only in very specific circumstances.
+    /// Any `None`-delimited groups (re)created by a proc_macro will therefore not preserve
+    /// operator priorities as indicated above. The other `Delimiter` variants should be used
+    /// instead in this context. This is a rustc bug. For details, see
+    /// [rust-lang/rust#67062](https://github.com/rust-lang/rust/issues/67062).
+    ///
+    /// </div>
     None,
 }
 
@@ -676,7 +675,7 @@ impl Group {
 
     fn _new_fallback(inner: fallback::Group) -> Self {
         Group {
-            inner: inner.into(),
+            inner: imp::Group::from(inner),
         }
     }
 
@@ -802,10 +801,16 @@ impl Punct {
     /// The returned `Punct` will have the default span of `Span::call_site()`
     /// which can be further configured with the `set_span` method below.
     pub fn new(ch: char, spacing: Spacing) -> Self {
-        Punct {
-            ch,
-            spacing,
-            span: Span::call_site(),
+        if let '!' | '#' | '$' | '%' | '&' | '\'' | '*' | '+' | ',' | '-' | '.' | '/' | ':' | ';'
+        | '<' | '=' | '>' | '?' | '@' | '^' | '|' | '~' = ch
+        {
+            Punct {
+                ch,
+                spacing,
+                span: Span::call_site(),
+            }
+        } else {
+            panic!("unsupported proc macro punctuation character {:?}", ch);
         }
     }
 
@@ -919,14 +924,21 @@ impl Debug for Punct {
 #[derive(Clone)]
 pub struct Ident {
     inner: imp::Ident,
-    _marker: Marker,
+    _marker: ProcMacroAutoTraits,
 }
 
 impl Ident {
     fn _new(inner: imp::Ident) -> Self {
         Ident {
             inner,
-            _marker: Marker,
+            _marker: MARKER,
+        }
+    }
+
+    fn _new_fallback(inner: fallback::Ident) -> Self {
+        Ident {
+            inner: imp::Ident::from(inner),
+            _marker: MARKER,
         }
     }
 
@@ -1046,7 +1058,7 @@ impl Debug for Ident {
 #[derive(Clone)]
 pub struct Literal {
     inner: imp::Literal,
-    _marker: Marker,
+    _marker: ProcMacroAutoTraits,
 }
 
 macro_rules! suffixed_int_literals {
@@ -1093,14 +1105,14 @@ impl Literal {
     fn _new(inner: imp::Literal) -> Self {
         Literal {
             inner,
-            _marker: Marker,
+            _marker: MARKER,
         }
     }
 
     fn _new_fallback(inner: fallback::Literal) -> Self {
         Literal {
-            inner: inner.into(),
-            _marker: Marker,
+            inner: imp::Literal::from(inner),
+            _marker: MARKER,
         }
     }
 
@@ -1216,9 +1228,19 @@ impl Literal {
         Literal::_new(imp::Literal::character(ch))
     }
 
+    /// Byte character literal.
+    pub fn byte_character(byte: u8) -> Literal {
+        Literal::_new(imp::Literal::byte_character(byte))
+    }
+
     /// Byte string literal.
-    pub fn byte_string(s: &[u8]) -> Literal {
-        Literal::_new(imp::Literal::byte_string(s))
+    pub fn byte_string(bytes: &[u8]) -> Literal {
+        Literal::_new(imp::Literal::byte_string(bytes))
+    }
+
+    /// C string literal.
+    pub fn c_string(string: &CStr) -> Literal {
+        Literal::_new(imp::Literal::c_string(string))
     }
 
     /// Returns the span encompassing this literal.
@@ -1238,8 +1260,6 @@ impl Literal {
     /// Warning: the underlying [`proc_macro::Literal::subspan`] method is
     /// nightly-only. When called from within a procedural macro not using a
     /// nightly compiler, this method will always return `None`.
-    ///
-    /// [`proc_macro::Literal::subspan`]: https://doc.rust-lang.org/proc_macro/struct.Literal.html#method.subspan
     pub fn subspan<R: RangeBounds<usize>>(&self, range: R) -> Option<Span> {
         self.inner.subspan(range).map(Span::_new)
     }
@@ -1258,10 +1278,13 @@ impl FromStr for Literal {
     type Err = LexError;
 
     fn from_str(repr: &str) -> Result<Self, LexError> {
-        repr.parse().map(Literal::_new).map_err(|inner| LexError {
-            inner,
-            _marker: Marker,
-        })
+        match imp::Literal::from_str_checked(repr) {
+            Ok(lit) => Ok(Literal::_new(lit)),
+            Err(lex) => Err(LexError {
+                inner: lex,
+                _marker: MARKER,
+            }),
+        }
     }
 }
 
@@ -1279,7 +1302,7 @@ impl Display for Literal {
 
 /// Public implementation details for the `TokenStream` type, such as iterators.
 pub mod token_stream {
-    use crate::marker::Marker;
+    use crate::marker::{ProcMacroAutoTraits, MARKER};
     use crate::{imp, TokenTree};
     use core::fmt::{self, Debug};
 
@@ -1292,7 +1315,7 @@ pub mod token_stream {
     #[derive(Clone)]
     pub struct IntoIter {
         inner: imp::TokenTreeIter,
-        _marker: Marker,
+        _marker: ProcMacroAutoTraits,
     }
 
     impl Iterator for IntoIter {
@@ -1321,7 +1344,7 @@ pub mod token_stream {
         fn into_iter(self) -> IntoIter {
             IntoIter {
                 inner: self.inner.into_iter(),
-                _marker: Marker,
+                _marker: MARKER,
             }
         }
     }

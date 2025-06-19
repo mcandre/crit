@@ -101,8 +101,8 @@
 //!    - SocketAddrV6
 //!
 //! [Implementing `Deserialize`]: https://serde.rs/impl-deserialize.html
-//! [`Deserialize`]: ../trait.Deserialize.html
-//! [`Deserializer`]: ../trait.Deserializer.html
+//! [`Deserialize`]: crate::Deserialize
+//! [`Deserializer`]: crate::Deserializer
 //! [`LinkedHashMap<K, V>`]: https://docs.rs/linked-hash-map/*/linked_hash_map/struct.LinkedHashMap.html
 //! [`postcard`]: https://github.com/jamesmunns/postcard
 //! [`linked-hash-map`]: https://crates.io/crates/linked-hash-map
@@ -118,17 +118,16 @@ use crate::lib::*;
 
 pub mod value;
 
-mod format;
 mod ignored_any;
 mod impls;
 pub(crate) mod size_hint;
 
 pub use self::ignored_any::IgnoredAny;
 
-#[cfg(not(any(feature = "std", feature = "unstable")))]
+#[cfg(all(not(feature = "std"), no_core_error))]
 #[doc(no_inline)]
 pub use crate::std_error::Error as StdError;
-#[cfg(all(feature = "unstable", not(feature = "std")))]
+#[cfg(not(any(feature = "std", no_core_error)))]
 #[doc(no_inline)]
 pub use core::error::Error as StdError;
 #[cfg(feature = "std")]
@@ -402,20 +401,20 @@ impl<'a> fmt::Display for Unexpected<'a> {
             Bool(b) => write!(formatter, "boolean `{}`", b),
             Unsigned(i) => write!(formatter, "integer `{}`", i),
             Signed(i) => write!(formatter, "integer `{}`", i),
-            Float(f) => write!(formatter, "floating point `{}`", f),
+            Float(f) => write!(formatter, "floating point `{}`", WithDecimalPoint(f)),
             Char(c) => write!(formatter, "character `{}`", c),
             Str(s) => write!(formatter, "string {:?}", s),
-            Bytes(_) => write!(formatter, "byte array"),
-            Unit => write!(formatter, "unit value"),
-            Option => write!(formatter, "Option value"),
-            NewtypeStruct => write!(formatter, "newtype struct"),
-            Seq => write!(formatter, "sequence"),
-            Map => write!(formatter, "map"),
-            Enum => write!(formatter, "enum"),
-            UnitVariant => write!(formatter, "unit variant"),
-            NewtypeVariant => write!(formatter, "newtype variant"),
-            TupleVariant => write!(formatter, "tuple variant"),
-            StructVariant => write!(formatter, "struct variant"),
+            Bytes(_) => formatter.write_str("byte array"),
+            Unit => formatter.write_str("unit value"),
+            Option => formatter.write_str("Option value"),
+            NewtypeStruct => formatter.write_str("newtype struct"),
+            Seq => formatter.write_str("sequence"),
+            Map => formatter.write_str("map"),
+            Enum => formatter.write_str("enum"),
+            UnitVariant => formatter.write_str("unit variant"),
+            NewtypeVariant => formatter.write_str("newtype variant"),
+            TupleVariant => formatter.write_str("tuple variant"),
+            StructVariant => formatter.write_str("struct variant"),
             Other(other) => formatter.write_str(other),
         }
     }
@@ -487,13 +486,13 @@ where
     }
 }
 
-impl<'a> Expected for &'a str {
+impl Expected for &str {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         formatter.write_str(self)
     }
 }
 
-impl<'a> Display for Expected + 'a {
+impl Display for Expected + '_ {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         Expected::fmt(self, formatter)
     }
@@ -532,6 +531,13 @@ impl<'a> Display for Expected + 'a {
 /// deserializer lifetimes] for a more detailed explanation of these lifetimes.
 ///
 /// [Understanding deserializer lifetimes]: https://serde.rs/lifetimes.html
+#[cfg_attr(
+    not(no_diagnostic_namespace),
+    diagnostic::on_unimplemented(
+        note = "for local types consider adding `#[derive(serde::Deserialize)]` to your `{Self}` type",
+        note = "for types from other crates check whether the crate offers a `serde` feature flag",
+    )
+)]
 pub trait Deserialize<'de>: Sized {
     /// Deserialize this value from the given Serde deserializer.
     ///
@@ -1367,7 +1373,7 @@ pub trait Visitor<'de>: Sized {
         E: Error,
     {
         let mut buf = [0u8; 58];
-        let mut writer = format::Buf::new(&mut buf);
+        let mut writer = crate::format::Buf::new(&mut buf);
         fmt::Write::write_fmt(&mut writer, format_args!("integer `{}` as i128", v)).unwrap();
         Err(Error::invalid_type(
             Unexpected::Other(writer.as_str()),
@@ -1429,7 +1435,7 @@ pub trait Visitor<'de>: Sized {
         E: Error,
     {
         let mut buf = [0u8; 57];
-        let mut writer = format::Buf::new(&mut buf);
+        let mut writer = crate::format::Buf::new(&mut buf);
         fmt::Write::write_fmt(&mut writer, format_args!("integer `{}` as u128", v)).unwrap();
         Err(Error::invalid_type(
             Unexpected::Other(writer.as_str()),
@@ -1525,7 +1531,7 @@ pub trait Visitor<'de>: Sized {
     /// `String`.
     #[inline]
     #[cfg(any(feature = "std", feature = "alloc"))]
-    #[cfg_attr(doc_cfg, doc(cfg(any(feature = "std", feature = "alloc"))))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "alloc"))))]
     fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
     where
         E: Error,
@@ -1584,7 +1590,7 @@ pub trait Visitor<'de>: Sized {
     /// The default implementation forwards to `visit_bytes` and then drops the
     /// `Vec<u8>`.
     #[cfg(any(feature = "std", feature = "alloc"))]
-    #[cfg_attr(doc_cfg, doc(cfg(any(feature = "std", feature = "alloc"))))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "alloc"))))]
     fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
     where
         E: Error,
@@ -1735,9 +1741,9 @@ pub trait SeqAccess<'de> {
     }
 }
 
-impl<'de, 'a, A: ?Sized> SeqAccess<'de> for &'a mut A
+impl<'de, A> SeqAccess<'de> for &mut A
 where
-    A: SeqAccess<'de>,
+    A: ?Sized + SeqAccess<'de>,
 {
     type Error = A::Error;
 
@@ -1888,9 +1894,9 @@ pub trait MapAccess<'de> {
     }
 }
 
-impl<'de, 'a, A: ?Sized> MapAccess<'de> for &'a mut A
+impl<'de, A> MapAccess<'de> for &mut A
 where
-    A: MapAccess<'de>,
+    A: ?Sized + MapAccess<'de>,
 {
     type Error = A::Error;
 
@@ -2278,15 +2284,52 @@ impl Display for OneOf {
             1 => write!(formatter, "`{}`", self.names[0]),
             2 => write!(formatter, "`{}` or `{}`", self.names[0], self.names[1]),
             _ => {
-                tri!(write!(formatter, "one of "));
+                tri!(formatter.write_str("one of "));
                 for (i, alt) in self.names.iter().enumerate() {
                     if i > 0 {
-                        tri!(write!(formatter, ", "));
+                        tri!(formatter.write_str(", "));
                     }
                     tri!(write!(formatter, "`{}`", alt));
                 }
                 Ok(())
             }
         }
+    }
+}
+
+struct WithDecimalPoint(f64);
+
+impl Display for WithDecimalPoint {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        struct LookForDecimalPoint<'f, 'a> {
+            formatter: &'f mut fmt::Formatter<'a>,
+            has_decimal_point: bool,
+        }
+
+        impl<'f, 'a> fmt::Write for LookForDecimalPoint<'f, 'a> {
+            fn write_str(&mut self, fragment: &str) -> fmt::Result {
+                self.has_decimal_point |= fragment.contains('.');
+                self.formatter.write_str(fragment)
+            }
+
+            fn write_char(&mut self, ch: char) -> fmt::Result {
+                self.has_decimal_point |= ch == '.';
+                self.formatter.write_char(ch)
+            }
+        }
+
+        if self.0.is_finite() {
+            let mut writer = LookForDecimalPoint {
+                formatter,
+                has_decimal_point: false,
+            };
+            tri!(write!(writer, "{}", self.0));
+            if !writer.has_decimal_point {
+                tri!(formatter.write_str(".0"));
+            }
+        } else {
+            tri!(write!(formatter, "{}", self.0));
+        }
+        Ok(())
     }
 }

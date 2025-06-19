@@ -7,7 +7,7 @@
 //! - [Tutorial][_tutorial::chapter_0]
 //! - [Special Topics][_topic]
 //! - [Discussions](https://github.com/winnow-rs/winnow/discussions)
-//! - [CHANGELOG](https://github.com/winnow-rs/winnow/blob/v0.5.34/CHANGELOG.md) (includes major version migration
+//! - [CHANGELOG](https://github.com/winnow-rs/winnow/blob/v0.5.40/CHANGELOG.md) (includes major version migration
 //!   guides)
 //!
 //! ## Aspirations
@@ -138,6 +138,7 @@
 #![allow(clippy::single_match_else)]
 #![allow(clippy::single_match)]
 #![allow(clippy::unnested_or_patterns)]
+#![allow(deprecated)]
 #[cfg_attr(nightly, warn(rustdoc::missing_doc_code_examples))]
 #[cfg(feature = "alloc")]
 #[cfg_attr(test, macro_use)]
@@ -240,6 +241,8 @@ pub mod prelude {
     pub use crate::IResult;
     pub use crate::PResult;
     pub use crate::Parser;
+    #[cfg(feature = "unstable-recover")]
+    pub use crate::RecoverableParser as _;
 }
 
 pub use error::IResult;

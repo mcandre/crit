@@ -1,6 +1,6 @@
 # indexmap
 
-[![build status](https://github.com/bluss/indexmap/workflows/Continuous%20integration/badge.svg?branch=master)](https://github.com/bluss/indexmap/actions)
+[![build status](https://github.com/indexmap-rs/indexmap/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/indexmap-rs/indexmap/actions)
 [![crates.io](https://img.shields.io/crates/v/indexmap.svg)](https://crates.io/crates/indexmap)
 [![docs](https://docs.rs/indexmap/badge.svg)](https://docs.rs/indexmap)
 [![rustc](https://img.shields.io/badge/rust-1.63%2B-orange.svg)](https://img.shields.io/badge/rust-1.63%2B-orange.svg)
@@ -14,6 +14,8 @@ allows lookup of entries by either hash table key or numerical index.
 
 Note: this crate was originally released under the name `ordermap`,
 but it was renamed to `indexmap` to better reflect its features.
+The [`ordermap`](https://crates.io/crates/ordermap) crate now exists
+as a wrapper over `indexmap` with stronger ordering properties.
 
 # Background
 
@@ -26,7 +28,9 @@ was indexmap, a hash table that has following properties:
 - Order is **independent of hash function** and hash values of keys.
 - Fast to iterate.
 - Indexed in compact space.
-- Preserves insertion order **as long** as you don't call `.remove()`.
+- Preserves insertion order **as long** as you don't call `.remove()`,
+  `.swap_remove()`, or other methods that explicitly change order.
+  The alternate `.shift_remove()` does preserve relative order.
 - Uses hashbrown for the inner table, just like Rust's libstd `HashMap` does.
 
 ## Performance
@@ -52,4 +56,4 @@ which is roughly:
 
 # Recent Changes
 
-See [RELEASES.md](https://github.com/bluss/indexmap/blob/master/RELEASES.md).
+See [RELEASES.md](https://github.com/indexmap-rs/indexmap/blob/main/RELEASES.md).

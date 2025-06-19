@@ -5,66 +5,22 @@ extern crate tinyrick_extras;
 
 use std::path;
 
-/// Generate documentation
-fn doc() {
-    tinyrick_extras::build();
+/// archive bundles executables.
+fn archive() {
+    tinyrick_extras::archive(
+        path::Path::new(".crit").join("bin").display().to_string(),
+        banner(),
+    );
 }
 
 /// Security audit
 fn audit() {
-    tinyrick::deps(cargo_audit);
+    tinyrick_extras::cargo_audit();
 }
 
-/// Run cargo audit
-fn cargo_audit() {
-    tinyrick::exec!("cargo", &["audit"]);
-}
-
-/// Run clippy
-fn clippy() {
-    tinyrick_extras::clippy();
-}
-
-/// Run rustfmt
-fn rustfmt() {
-    tinyrick_extras::rustfmt();
-}
-
-/// Run unmake
-fn unmake() {
-    tinyrick::exec!("unmake", &["."]);
-    tinyrick::exec!("unmake", &["-n", "."]);
-}
-
-/// Validate documentation and run linters
-fn lint() {
-    tinyrick::deps(doc);
-    tinyrick::deps(clippy);
-    tinyrick::deps(rustfmt);
-    tinyrick::deps(unmake);
-}
-
-/// Install artifacts
-fn install() {
-    tinyrick::exec!("cargo", &["install", "--force", "--path", "."]);
-}
-
-/// Uninstall artifacts
-fn uninstall() {
-    tinyrick::exec!("cargo", &["uninstall"]);
-}
-
-/// Run tests
-fn test() {
-    tinyrick::deps(install);
-
-    assert!(
-        tinyrick::exec_mut!("crit", &["-l"])
-            .current_dir("example")
-            .status()
-            .unwrap()
-            .success()
-    );
+/// banner generates artifact labels.
+fn banner() -> String {
+    format!("{}-{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
 }
 
 /// Build: Doc, lint, test, and compile
@@ -74,28 +30,21 @@ fn build() {
     tinyrick_extras::build();
 }
 
-/// banner generates artifact labels.
-fn banner() -> String {
-    format!("{}-{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
+/// Run cargo check
+fn cargo_check() {
+    tinyrick::exec!("cargo", &["check"]);
 }
 
-/// archive bundles executables.
-fn archive() {
-    tinyrick_extras::archive(
-        path::Path::new(".crit").join("bin").display().to_string(),
-        banner(),
-    );
+/// Clean workspaces
+fn clean() {
+    tinyrick::deps(clean_cargo);
+    tinyrick::deps(clean_example);
+    tinyrick::deps(clean_ports);
 }
 
-/// Prepare cross-platform release media.
-fn port() {
-    tinyrick_extras::crit(vec!["-b".to_string(), banner()]);
-    tinyrick::deps(archive);
-}
-
-/// Publish to crate repository
-fn publish() {
-    tinyrick_extras::publish();
+/// Clean cargo
+fn clean_cargo() {
+    tinyrick_extras::clean_cargo();
 }
 
 /// Clean example project
@@ -119,11 +68,68 @@ fn clean_ports() {
     );
 }
 
-/// Clean workspaces
-fn clean() {
-    tinyrick_extras::clean_cargo();
-    tinyrick::deps(clean_example);
-    tinyrick::deps(clean_ports);
+/// Run clippy
+fn clippy() {
+    tinyrick_extras::clippy();
+}
+
+/// Generate documentation
+fn doc() {
+    tinyrick_extras::build();
+}
+
+/// Install artifacts
+fn install() {
+    tinyrick::exec!("cargo", &["install", "--force", "--path", "."]);
+}
+
+/// Validate documentation and run linters
+fn lint() {
+    tinyrick::deps(cargo_check);
+    tinyrick::deps(clippy);
+    tinyrick::deps(doc);
+    tinyrick::deps(rustfmt);
+    tinyrick::deps(unmake);
+}
+
+/// Prepare cross-platform release media.
+fn port() {
+    tinyrick_extras::crit(vec!["-b".to_string(), banner()]);
+    tinyrick::deps(archive);
+}
+
+/// Publish to crate repository
+fn publish() {
+    tinyrick_extras::publish();
+}
+
+/// Run rustfmt
+fn rustfmt() {
+    tinyrick_extras::rustfmt();
+}
+
+/// Run tests
+fn test() {
+    tinyrick::deps(install);
+
+    assert!(
+        tinyrick::exec_mut!("crit", &["-l"])
+            .current_dir("example")
+            .status()
+            .unwrap()
+            .success()
+    );
+}
+
+/// Run unmake
+fn unmake() {
+    tinyrick::exec!("unmake", &["."]);
+    tinyrick::exec!("unmake", &["-n", "."]);
+}
+
+/// Uninstall artifacts
+fn uninstall() {
+    tinyrick::exec!("cargo", &["uninstall"]);
 }
 
 /// CLI entrypoint
@@ -132,21 +138,22 @@ fn main() {
 
     tinyrick::wubba_lubba_dub_dub!(
         build;
-        doc,
-        install,
-        uninstall,
-        audit,
-        cargo_audit,
-        clippy,
-        rustfmt,
-        unmake,
-        lint,
-        test,
         archive,
-        port,
-        publish,
+        audit,
+        cargo_check,
+        clean,
+        clean_cargo,
         clean_example,
         clean_ports,
-        clean
+        clippy,
+        doc,
+        install,
+        lint,
+        port,
+        publish,
+        rustfmt,
+        test,
+        uninstall,
+        unmake
     );
 }

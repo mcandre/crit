@@ -1,7 +1,6 @@
-// We *mostly* avoid unsafe code, but `map::core::raw` allows it to use `RawTable` buckets.
+// We *mostly* avoid unsafe code, but `Slice` allows it for DST casting.
 #![deny(unsafe_code)]
 #![warn(rust_2018_idioms)]
-#![doc(html_root_url = "https://docs.rs/indexmap/1/")]
 #![no_std]
 
 //! [`IndexMap`] is a hash table where the iteration order of the key-value
@@ -9,10 +8,6 @@
 //!
 //! [`IndexSet`] is a corresponding hash set using the same implementation and
 //! with similar properties.
-//!
-//! [`IndexMap`]: map/struct.IndexMap.html
-//! [`IndexSet`]: set/struct.IndexSet.html
-//!
 //!
 //! ### Highlights
 //!
@@ -24,7 +19,7 @@
 //! - The [`Equivalent`] trait, which offers more flexible equality definitions
 //!   between borrowed and owned versions of keys.
 //! - The [`MutableKeys`][map::MutableKeys] trait, which gives opt-in mutable
-//!   access to hash map keys.
+//!   access to map keys, and [`MutableValues`][set::MutableValues] for sets.
 //!
 //! ### Feature Flags
 //!
@@ -44,6 +39,11 @@
 //!   to [`IndexMap`] and [`IndexSet`].
 //! * `quickcheck`: Adds implementations for the [`quickcheck::Arbitrary`] trait
 //!   to [`IndexMap`] and [`IndexSet`].
+//! * `borsh` (**deprecated**): Adds implementations for [`BorshSerialize`] and
+//!   [`BorshDeserialize`] to [`IndexMap`] and [`IndexSet`]. Due to a cyclic
+//!   dependency that arose between [`borsh`] and `indexmap`, `borsh v1.5.6`
+//!   added an `indexmap` feature that should be used instead of enabling the
+//!   feature here.
 //!
 //! _Note: only the `std` feature is enabled by default._
 //!
@@ -51,32 +51,30 @@
 //! [`no_std`]: #no-standard-library-targets
 //! [`Serialize`]: `::serde::Serialize`
 //! [`Deserialize`]: `::serde::Deserialize`
+//! [`BorshSerialize`]: `::borsh::BorshSerialize`
+//! [`BorshDeserialize`]: `::borsh::BorshDeserialize`
+//! [`borsh`]: `::borsh`
 //! [`arbitrary::Arbitrary`]: `::arbitrary::Arbitrary`
 //! [`quickcheck::Arbitrary`]: `::quickcheck::Arbitrary`
 //!
 //! ### Alternate Hashers
 //!
-//! [`IndexMap`] and [`IndexSet`] have a default hasher type `S = RandomState`,
+//! [`IndexMap`] and [`IndexSet`] have a default hasher type
+//! [`S = RandomState`][std::collections::hash_map::RandomState],
 //! just like the standard `HashMap` and `HashSet`, which is resistant to
 //! HashDoS attacks but not the most performant. Type aliases can make it easier
 //! to use alternate hashers:
 //!
 //! ```
 //! use fnv::FnvBuildHasher;
-//! use fxhash::FxBuildHasher;
 //! use indexmap::{IndexMap, IndexSet};
 //!
 //! type FnvIndexMap<K, V> = IndexMap<K, V, FnvBuildHasher>;
 //! type FnvIndexSet<T> = IndexSet<T, FnvBuildHasher>;
 //!
-//! type FxIndexMap<K, V> = IndexMap<K, V, FxBuildHasher>;
-//! type FxIndexSet<T> = IndexSet<T, FxBuildHasher>;
-//!
 //! let std: IndexSet<i32> = (0..100).collect();
 //! let fnv: FnvIndexSet<i32> = (0..100).collect();
-//! let fx: FxIndexSet<i32> = (0..100).collect();
 //! assert_eq!(std, fnv);
-//! assert_eq!(std, fx);
 //! ```
 //!
 //! ### Rust Version
@@ -94,15 +92,13 @@
 //! `default-features = false` to your dependency specification.
 //!
 //! - Creating maps and sets using [`new`][IndexMap::new] and
-//! [`with_capacity`][IndexMap::with_capacity] is unavailable without `std`.
-//!   Use methods [`IndexMap::default`][def],
-//!   [`with_hasher`][IndexMap::with_hasher],
+//!   [`with_capacity`][IndexMap::with_capacity] is unavailable without `std`.
+//!   Use methods [`IndexMap::default`], [`with_hasher`][IndexMap::with_hasher],
 //!   [`with_capacity_and_hasher`][IndexMap::with_capacity_and_hasher] instead.
 //!   A no-std compatible hasher will be needed as well, for example
 //!   from the crate `twox-hash`.
-//! - Macros [`indexmap!`] and [`indexset!`] are unavailable without `std`.
-//!
-//! [def]: map/struct.IndexMap.html#impl-Default
+//! - Macros [`indexmap!`] and [`indexset!`] are unavailable without `std`. Use
+//!   the macros [`indexmap_with_default!`] and [`indexset_with_default!`] instead.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -117,9 +113,9 @@ use alloc::vec::{self, Vec};
 mod arbitrary;
 #[macro_use]
 mod macros;
-mod mutable_keys;
+#[cfg(feature = "borsh")]
+mod borsh;
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 mod serde;
 mod util;
 
@@ -129,11 +125,7 @@ pub mod set;
 // Placed after `map` and `set` so new `rayon` methods on the types
 // are documented after the "normal" methods.
 #[cfg(feature = "rayon")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rayon")))]
 mod rayon;
-
-#[cfg(feature = "rustc-rayon")]
-mod rustc;
 
 pub use crate::map::IndexMap;
 pub use crate::set::IndexSet;
@@ -221,7 +213,7 @@ trait Entries {
         F: FnOnce(&mut [Self::Entry]);
 }
 
-/// The error type for `try_reserve` methods.
+/// The error type for [`try_reserve`][IndexMap::try_reserve] methods.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct TryReserveError {
     kind: TryReserveErrorKind,
@@ -276,3 +268,33 @@ impl core::fmt::Display for TryReserveError {
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for TryReserveError {}
+
+// NOTE: This is copied from the slice module in the std lib.
+/// The error type returned by [`get_disjoint_indices_mut`][`IndexMap::get_disjoint_indices_mut`].
+///
+/// It indicates one of two possible errors:
+/// - An index is out-of-bounds.
+/// - The same index appeared multiple times in the array.
+//    (or different but overlapping indices when ranges are provided)
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GetDisjointMutError {
+    /// An index provided was out-of-bounds for the slice.
+    IndexOutOfBounds,
+    /// Two indices provided were overlapping.
+    OverlappingIndices,
+}
+
+impl core::fmt::Display for GetDisjointMutError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let msg = match self {
+            GetDisjointMutError::IndexOutOfBounds => "an index is out of bounds",
+            GetDisjointMutError::OverlappingIndices => "there were overlapping indices",
+        };
+
+        core::fmt::Display::fmt(msg, f)
+    }
+}
+
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+impl std::error::Error for GetDisjointMutError {}
