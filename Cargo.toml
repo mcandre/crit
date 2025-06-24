@@ -5,7 +5,7 @@ version = "0.0.9"
 edition = "2024"
 authors = ["Andrew Pennebaker <n4jm4@pm.me>"]
 license = "BSD-2-Clause"
-homepage = "https://github.com/mcandre/crit"
+repository = "https://github.com/mcandre/crit"
 
 [dependencies]
 die = "=0.2.0"
