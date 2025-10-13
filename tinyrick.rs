@@ -89,7 +89,6 @@ fn lint() {
     tinyrick::deps(clippy);
     tinyrick::deps(doc);
     tinyrick::deps(rustfmt);
-    tinyrick::deps(unmake);
 }
 
 /// Prepare cross-platform release media.
@@ -121,12 +120,6 @@ fn test() {
     );
 }
 
-/// Run unmake
-fn unmake() {
-    tinyrick::exec!("unmake", &["."]);
-    tinyrick::exec!("unmake", &["-n", "."]);
-}
-
 /// Uninstall artifacts
 fn uninstall() {
     tinyrick::exec!("cargo", &["uninstall"]);
@@ -153,7 +146,6 @@ fn main() {
         publish,
         rustfmt,
         test,
-        uninstall,
-        unmake
+        uninstall
     );
 }

@@ -1,12 +1,12 @@
 # BUILDTIME REQUIREMENTS
 
+* a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))
 * [rustup](https://rustup.rs/) 1.28.1+
 * [Rust](https://www.rust-lang.org/en-US/) 1.87.0+
 * [cross](https://crates.io/crates/cross) 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa
 * [Docker](https://www.docker.com/) 28.0.1+
-* [POSIX](https://pubs.opengroup.org/onlinepubs/9799919799/) compatible [make](https://en.wikipedia.org/wiki/Make_(software))
 * [POSIX](https://pubs.opengroup.org/onlinepubs/9799919799/) compatible [tar](https://en.wikipedia.org/wiki/Tar_(computing))
-* Provision additional dev tools with `make [-j 4]`
+* Provision additional dev tools with `./install`
 
 ## Recommended
 
@@ -16,7 +16,6 @@
 * [ASDF](https://asdf-vm.com/) 0.10 (run `asdf reshim` after provisioning)
 * [cargo-cache](https://crates.io/crates/cargo-cache)
 * [direnv](https://direnv.net/) 2
-* [GNU](https://www.gnu.org/)/[BSD](https://en.wikipedia.org/wiki/Berkeley_Software_Distribution) [make](https://en.wikipedia.org/wiki/Make_(software))
 * [GNU](https://www.gnu.org/)/[BSD](https://en.wikipedia.org/wiki/Berkeley_Software_Distribution) [tar](https://en.wikipedia.org/wiki/Tar_(computing))
 * [GNU](https://www.gnu.org/) [time](https://en.wikipedia.org/wiki/Time_(Unix))
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
