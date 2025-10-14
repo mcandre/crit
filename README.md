@@ -56,7 +56,7 @@ BSD-2-Clause
 # RUNTIME REQUIREMENTS
 
 * [rustup](https://rustup.rs/) 1.28.1+
-* [Rust](https://www.rust-lang.org/en-US/) 1.87.0+
+* [Rust](https://www.rust-lang.org/en-US/)
 * [cross](https://crates.io/crates/cross) 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa
 * [Docker](https://www.docker.com/) 28.0.1+
 
@@ -66,11 +66,11 @@ BSD-2-Clause
 * a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))
 * [Docker First Aid Kit](https://github.com/mcandre/docker-first-aid-kit)
 * Apply `DOCKER_DEFAULT_PLATFORM` = `linux/amd64` environment variable
-* [ASDF](https://asdf-vm.com/) 0.10 (run `asdf reshim` after each Rust application binary installation)
+* [ASDF](https://asdf-vm.com/) 0.18 (run `asdf reshim` after each Rust application binary installation)
 * [cargo-cache](https://crates.io/crates/cargo-cache)
 * [direnv](https://direnv.net/) 2
 * POSIX compatible [tar](https://pubs.opengroup.org/onlinepubs/7908799/xcu/tar.html)
-* [tinyrick](https://github.com/mcandre/tinyrick) 0.0.9
+* [tinyrick](https://github.com/mcandre/tinyrick)
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
 * GNU compatible [time](https://www.gnu.org/software/time/)
 * [Amphetamine](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12) (macOS), [The Caffeine](https://www.microsoft.com/store/productId/9PJBW5SCH9LC) (Windows), [Caffeine](https://launchpad.net/caffeine) (Linux) can prevent hibernation during any long builds
