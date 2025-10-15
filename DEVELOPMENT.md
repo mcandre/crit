@@ -19,7 +19,6 @@
 * [GNU](https://www.gnu.org/)/[BSD](https://en.wikipedia.org/wiki/Berkeley_Software_Distribution) [tar](https://en.wikipedia.org/wiki/Tar_(computing))
 * [GNU](https://www.gnu.org/) [time](https://en.wikipedia.org/wiki/Time_(Unix))
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
-* a [UNIX](https://en.wikipedia.org/wiki/Unix)-like environment
 
 # INSTALL BINARIES FROM SOURCE
 
