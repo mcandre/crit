@@ -65,6 +65,7 @@ BSD-2-Clause
 * a host capable of running musl/Linux containers (e.g. a GNU/Linux, musl/Linux, macOS, or Windows host)
 * a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))
 * [Docker First Aid Kit](https://github.com/mcandre/docker-first-aid-kit)
+* 256 GB of space allocated to Docker
 * Apply `DOCKER_DEFAULT_PLATFORM` = `linux/amd64` environment variable
 * [ASDF](https://asdf-vm.com/) 0.18 (run `asdf reshim` after each Rust application binary installation)
 * [cargo-cache](https://crates.io/crates/cargo-cache)
