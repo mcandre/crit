@@ -8,7 +8,7 @@ cargo install --force \
     cargo-audit \
     cargo-cache \
     cargo-edit \
-    tinyrick@0.0.15
+    tinyrick@0.0.17
 cargo install --force \
     cross \
         --git https://github.com/cross-rs/cross \
