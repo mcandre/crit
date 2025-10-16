@@ -8,14 +8,14 @@ license = "BSD-2-Clause"
 repository = "https://github.com/mcandre/crit"
 
 [dependencies]
-die = "=0.2.0"
-getopts = "=0.2.21"
-lazy_static = "1.4.0"
-pad = "=0.1.6"
-regex = "1.7.3"
-tinyrick = { version = "=0.0.15", optional = true }
-tinyrick_extras = { version = "=0.0.9", optional = true }
-toml = "=0.7.3"
+die = "0.2.0"
+getopts = "0.2.24"
+lazy_static = "1.5.0"
+pad = "0.1.6"
+regex = "1.12.2"
+tinyrick = { version = "0.0.16", optional = true }
+tinyrick_extras = { version = "0.0.10", optional = true }
+toml = "0.7.8"
 
 [features]
 letmeout = ["tinyrick", "tinyrick_extras"]
