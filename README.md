@@ -127,6 +127,7 @@ Some cross-compilation performance tips:
 
 # SEE ALSO
 
+* [chandler](https://github.com/mcandre/chandler) normalizes executable archives
 * [cross](https://github.com/cross-rs/cross) underlying cross-compiler system
 * [cross-toolchains](https://github.com/cross-rs/cross-toolchains) provisions cross Docker images
 * [cubejs/rust-cross](https://hub.docker.com/r/cubejs/rust-cross/tags) Docker images for additional cross targets
