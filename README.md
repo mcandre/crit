@@ -76,9 +76,9 @@ BSD-2-Clause
 * [GNU](https://www.gnu.org/) [time](https://en.wikipedia.org/wiki/Time_(Unix))
 * [Amphetamine](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12) (macOS), [The Caffeine](https://www.microsoft.com/store/productId/9PJBW5SCH9LC) (Windows), [Caffeine](https://launchpad.net/caffeine) (Linux) can prevent hibernation during any long builds
 
-tar is a portable archiver suitable for creating `*.tgz` tarball archives. Users can then download the tarball and extract the executable relevant to their platform. Tarballs are especially well suited for use in Docker containers, as the tar command is more likely to be installed than unzip.
+**Warning**: Non-UNIX file systems may not preserve crucial chmod permissions during port generation. This can corrupt downstream artifacts, such as compressed archives and installation procedures.
 
-Note that non-UNIX file systems may not preserve crucial chmod acl bits during port generation. This can corrupt downstream artifacts, such as compressed archives and installation procedures.
+tar is a portable archiver suitable for creating `*.tgz` tarball archives. Users can then download the tarball and extract the executable relevant to their platform. Tarballs are especially well suited for use in Docker containers, as the tar command is more likely to be installed than unzip.
 
 # CONTRIBUTING
 

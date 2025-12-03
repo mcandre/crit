@@ -13,12 +13,7 @@ getopts = "0.2.24"
 lazy_static = "1.5.0"
 pad = "0.1.6"
 regex = "1.12.2"
-tinyrick = { version = "0.0.17", optional = true }
-tinyrick_extras = { version = "0.0.11", optional = true }
 toml = "0.9.8"
-
-[features]
-letmeout = ["tinyrick", "tinyrick_extras"]
 
 [lib]
 name = "crit"
@@ -26,8 +21,3 @@ name = "crit"
 [[bin]]
 name = "crit"
 path = "src/crit.rs"
-
-[[bin]]
-name = "tinyrick"
-path = "tinyrick.rs"
-required-features = ["letmeout"]

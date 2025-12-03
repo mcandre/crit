@@ -11,71 +11,69 @@ use std::fmt::Write;
 use std::fs;
 use std::path;
 use std::process;
+use std::sync;
 
 /// CRIT_ARTIFACT_ROOT denotes the directory housing crit internal files during porting.
 pub static CRIT_ARTIFACT_ROOT: &str = ".crit";
 
-lazy_static::lazy_static! {
-    /// RUSTUP_TARGET_PATTERN matches Rust target triples from rustup target list output.
-    pub static ref RUSTUP_TARGET_PATTERN: regex::Regex = regex::Regex::new(r"(\S+)").unwrap();
+/// RUSTUP_TARGET_PATTERN matches Rust target triples from rustup target list output.
+pub static RUSTUP_TARGET_PATTERN: sync::LazyLock<regex::Regex> =
+    sync::LazyLock::new(|| regex::Regex::new(r"(\S+)").unwrap());
 
-    /// DEFAULT_TARGET_EXCLUSION_PATTERN collects patterns for problematic target triples,
-    /// such as bare metal targets that may lack support for the `std` package,
-    /// or targets without community supported cross images.
-    pub static ref DEFAULT_TARGET_EXCLUSION_PATTERN: regex::Regex = regex::Regex::new(
-        &[
-            "android",
-            "cuda",
-            "emscripten",
-            "fortanix",
-            "fuchsia",
-            "gnullvm",
-            "gnux32",
-            "ios",
-            "loongarch",
-            "msvc",
-            "none-eabi",
-            "ohos",
-            "pc-solaris",
-            "powerpc64le-unknown-linux-musl",
-            "redox",
-            "riscv64gc-unknown-linux-musl",
-            "sparcv9-sun-solaris",
-            "uefi",
-            "unknown-none",
-            "wasm",
-        ].join("|")
-    ).unwrap();
-
-    /// DEFAULT_FEATURE_EXCLUSION_PATTERN collects patterns for problematic binary features,
-    /// such as internal development programs.
-    pub static ref DEFAULT_FEATURE_EXCLUSION_PATTERN: regex::Regex = regex::Regex::new(
-        &[
-            "letmeout",
-        ].join("|")
-    ).unwrap();
-
-    /// BUILD_MODES enumerates cargo's major build modes.
-    pub static ref BUILD_MODES: Vec<String> = [
-        "debug",
-        "release",
-    ]
-        .iter()
-        .map(|e| e.to_string())
-        .collect();
-
-
-    /// BINARY_FILE_EXTENSIONS enumerates potential cargo build binary file extensions.
-    pub static ref BINARY_FILE_EXTENSIONS: Vec<String> = [
-        "",
-        "exe",
-        "js",
+/// FRINGE_TARGETS collects Rust platform entries
+/// likely to not work out of the box.
+pub static FRINGE_TARGETS: sync::LazyLock<Vec<&str>> = sync::LazyLock::new(|| {
+    vec![
+        "android",
+        "cuda",
+        "emscripten",
+        "fortanix",
+        "fuchsia",
+        "gnullvm",
+        "gnux32",
+        "ios",
+        "loongarch",
+        "msvc",
+        "none-eabi",
+        "ohos",
+        "pc-solaris",
+        "powerpc64le-unknown-linux-musl",
+        "redox",
+        "riscv64gc-unknown-linux-musl",
+        "sparcv9-sun-solaris",
+        "uefi",
+        "unknown-none",
         "wasm",
     ]
-        .iter()
-        .map(|e| e.to_string())
-        .collect();
-}
+});
+
+/// DEFAULT_TARGET_EXCLUSION_PATTERN matches problematic target triples,
+/// such as bare metal targets that may lack support for the `std` package,
+/// or targets without community supported cross images.
+pub static DEFAULT_TARGET_EXCLUSION_PATTERN: sync::LazyLock<regex::Regex> =
+    sync::LazyLock::new(|| regex::Regex::new(&FRINGE_TARGETS.join("|")).unwrap());
+
+/// CRATE_FEATURE_EXCLUSIONS collects development applications
+/// generally not intended for release.
+pub static CRATE_FEATURE_EXCLUSIONS: sync::LazyLock<Vec<&str>> = sync::LazyLock::new(|| {
+    vec![
+        // tinyrick
+        "letmeout",
+    ]
+});
+
+/// DEFAULT_FEATURE_EXCLUSION_PATTERN matches problematic binary features,
+/// such as internal development programs.
+pub static DEFAULT_FEATURE_EXCLUSION_PATTERN: sync::LazyLock<regex::Regex> =
+    sync::LazyLock::new(|| regex::Regex::new(&CRATE_FEATURE_EXCLUSIONS.join("|")).unwrap());
+
+/// BUILD_MODES enumerates cargo's major build modes.
+pub static BUILD_MODES: sync::LazyLock<Vec<&str>> =
+    sync::LazyLock::new(|| vec!["debug", "release"]);
+
+/// BINARY_FILE_EXTENSIONS collects potential cargo build binary file extensions.
+pub static BINARY_FILE_EXTENSIONS: sync::LazyLock<Vec<&str>> =
+    sync::LazyLock::new(|| vec!["", "exe", "js", "wasm"]);
 
 /// get_targets queries rustup for the list of available Rust target triples.
 pub fn get_targets(
