@@ -1,6 +1,5 @@
 //! crit provides predicates for conveniently managing multiple cross target builds.
 
-extern crate lazy_static;
 extern crate pad;
 extern crate regex;
 extern crate toml;
