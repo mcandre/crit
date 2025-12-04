@@ -27,7 +27,7 @@
 	clean-example \
 	clean-ports
 
-BANNER=crit-0.0.11
+BANNER=crit-0.0.12
 
 all: build
 
