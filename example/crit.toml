@@ -1,0 +1,33 @@
+# debug = true
+
+# exclusion_targets = [
+#     "android",
+#     "cuda",
+#     "emscripten",
+#     "fortanix",
+#     "fuchsia",
+#     "gnullvm",
+#     "gnux32",
+#     "i686-pc-windows-gnu",
+#     "ios",
+#     "loongarch",
+#     "msvc",
+#     "none-eabi",
+#     "ohos",
+#     "pc-solaris",
+#     "powerpc64le-unknown-linux-musl",
+#     "redox",
+#     "riscv64gc-unknown-linux-musl",
+#     "sparcv9-sun-solaris",
+#     "uefi",
+#     "unknown-none",
+#     "wasm",
+# ]
+
+# exclusion_features = [
+#     "letmeout",
+# ]
+
+# banner = "<app>-<version>"
+
+# cross_args = []

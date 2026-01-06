@@ -5,15 +5,30 @@ extern crate regex;
 extern crate toml;
 
 use pad::PadStr;
+use serde::{Deserialize, Serialize};
+
 use std::collections;
+use std::fmt;
 use std::fmt::Write;
 use std::fs;
 use std::path;
 use std::process;
 use std::sync;
 
-/// CRIT_ARTIFACT_ROOT denotes the directory housing crit internal files during porting.
+/// CONFIGURATION_FILENAME denotes the file path to an optional TOML configuration file,
+/// relative to the current working directory.
+pub static CONFIGURATION_FILENAME: &str = "crit.toml";
+
+/// CRIT_ARTIFACT_ROOT denotes the directory housing crit internal files.
 pub static CRIT_ARTIFACT_ROOT: &str = ".crit";
+
+/// ARTIFACT_ROOT_PATH denotes the path housing crit internal files.
+pub static ARTIFACT_ROOT_PATH: sync::LazyLock<&path::Path> =
+    sync::LazyLock::new(|| path::Path::new(CRIT_ARTIFACT_ROOT));
+
+/// CROSS_DIR_PATHBUF denotes the pathbuf housing cross internal files.
+pub static CROSS_DIR_PATHBUF: sync::LazyLock<path::PathBuf> =
+    sync::LazyLock::new(|| ARTIFACT_ROOT_PATH.join("cross"));
 
 /// RUSTUP_TARGET_PATTERN matches Rust target triples from rustup target list output.
 pub static RUSTUP_TARGET_PATTERN: sync::LazyLock<regex::Regex> =
@@ -47,11 +62,28 @@ pub static FRINGE_TARGETS: sync::LazyLock<Vec<&str>> = sync::LazyLock::new(|| {
     ]
 });
 
+/// EXCLUSION_TARGETS_PATTERN_REPLACE_TEMPLATE combines `exclusion_targets` and a pipe (|) delimited target string to form a pattern matching skippable targets.
+pub static EXCLUSION_TARGETS_PATTERN_REPLACE_TEMPLATE: &str = r"(exclusion_targets)";
+
+/// generate_target_exclusion_pattern builds a target matching pattern from a collection of targets.
+pub fn generate_target_exclusion_pattern(targets: &[&str]) -> String {
+    EXCLUSION_TARGETS_PATTERN_REPLACE_TEMPLATE.replace("exclusion_targets", &targets.join("|"))
+}
+
+#[test]
+fn test_default_target_exclusion_pattern() {
+    let pattern = regex::Regex::new(&generate_target_exclusion_pattern(&FRINGE_TARGETS)).unwrap();
+    assert!(pattern.is_match("aarch64-linux-android"));
+    assert!(pattern.is_match("aarch64-apple-ios"));
+    assert!(pattern.is_match("i686-pc-windows-gnu"));
+    assert!(!pattern.is_match("aarch64-unknown-linux-gnu"));
+}
+
 /// DEFAULT_TARGET_EXCLUSION_PATTERN matches problematic target triples,
 /// such as bare metal targets that may lack support for the `std` package,
 /// or targets without community supported cross images.
-pub static DEFAULT_TARGET_EXCLUSION_PATTERN: sync::LazyLock<regex::Regex> =
-    sync::LazyLock::new(|| regex::Regex::new(&FRINGE_TARGETS.join("|")).unwrap());
+pub static DEFAULT_TARGET_EXCLUSION_PATTERN: sync::LazyLock<String> =
+    sync::LazyLock::new(|| generate_target_exclusion_pattern(&FRINGE_TARGETS));
 
 /// CRATE_FEATURE_EXCLUSIONS collects development applications
 /// generally not intended for release.
@@ -62,10 +94,28 @@ pub static CRATE_FEATURE_EXCLUSIONS: sync::LazyLock<Vec<&str>> = sync::LazyLock:
     ]
 });
 
+/// EXCLUSION_FEATURES_PATTERN_REPLACE_TEMPLATE combines `exclusion_features` and a pipe (|) delimited feature string to form a pattern matching skippable features.
+pub static EXCLUSION_FEATURES_PATTERN_REPLACE_TEMPLATE: &str = r"^(exclusion_features)$";
+
+/// generate_feature_exclusion_pattern builds a feature matching pattern from a collection of features.
+pub fn generate_feature_exclusion_pattern(features: &[&str]) -> String {
+    EXCLUSION_FEATURES_PATTERN_REPLACE_TEMPLATE.replace("exclusion_features", &features.join("|"))
+}
+
+#[test]
+fn test_default_feature_exclusion_pattern() {
+    let pattern = regex::Regex::new(&generate_feature_exclusion_pattern(
+        &CRATE_FEATURE_EXCLUSIONS,
+    ))
+    .unwrap();
+    assert!(pattern.is_match("letmeout"));
+    assert!(!pattern.is_match("derive"));
+}
+
 /// DEFAULT_FEATURE_EXCLUSION_PATTERN matches problematic binary features,
 /// such as internal development programs.
-pub static DEFAULT_FEATURE_EXCLUSION_PATTERN: sync::LazyLock<regex::Regex> =
-    sync::LazyLock::new(|| regex::Regex::new(&CRATE_FEATURE_EXCLUSIONS.join("|")).unwrap());
+pub static DEFAULT_FEATURE_EXCLUSION_PATTERN: sync::LazyLock<String> =
+    sync::LazyLock::new(|| generate_feature_exclusion_pattern(&CRATE_FEATURE_EXCLUSIONS));
 
 /// BUILD_MODES enumerates cargo's major build modes.
 pub static BUILD_MODES: sync::LazyLock<Vec<&str>> =
@@ -75,44 +125,39 @@ pub static BUILD_MODES: sync::LazyLock<Vec<&str>> =
 pub static BINARY_FILE_EXTENSIONS: sync::LazyLock<Vec<&str>> =
     sync::LazyLock::new(|| vec!["", "exe", "js", "wasm"]);
 
-/// get_targets queries rustup for the list of available Rust target triples.
-pub fn get_targets(
-    target_exclusion_pattern: regex::Regex,
-) -> Result<collections::BTreeMap<String, bool>, String> {
-    process::Command::new("rustup")
-        .args(["target", "list"])
-        .stdout(process::Stdio::piped())
-        .stderr(process::Stdio::piped())
-        .output()
-        .map_err(|_| "unable to run rustup".to_string())
-        .and_then(|output| match output.status.success() {
-            // work around rustup writing error messages to stdout
-            false => Err("error: unable to query rustup target list".to_string()),
-            _ => String::from_utf8(output.stdout)
-                .map_err(|_| "error: unable to decode rustup stdout stream".to_string()),
-        })
-        .map(|text| {
-            text.lines()
-                .filter(|line| RUSTUP_TARGET_PATTERN.is_match(line))
-                .map(|line| {
-                    RUSTUP_TARGET_PATTERN
-                        .captures(line)
-                        .and_then(|e| e.get(1))
-                        .map(|e| e.as_str())
-                        .unwrap()
-                })
-                .map(|target| {
-                    (
-                        target.to_string(),
-                        !target_exclusion_pattern.is_match(target),
-                    )
-                })
-                .collect()
-        })
+/// CritError models bad computer states.
+#[derive(Debug)]
+pub enum CritError {
+    IOError(String),
+    UnsupportedPathError(String),
+    PathRenderError(String),
+    UnknownMimetypeError(String),
+    RegexParseError(String),
+    TOMLParseError(String),
+}
+
+impl fmt::Display for CritError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            CritError::IOError(e) => write!(f, "{e}"),
+            CritError::UnknownMimetypeError(e) => write!(f, "{e}"),
+            CritError::UnsupportedPathError(e) => write!(f, "{e}"),
+            CritError::PathRenderError(e) => write!(f, "{e}"),
+            CritError::RegexParseError(e) => write!(f, "{e}"),
+            CritError::TOMLParseError(e) => write!(f, "{e}"),
+        }
+    }
+}
+
+impl die::PrintExit for CritError {
+    fn print_exit(&self) -> ! {
+        eprintln!("{}", self);
+        process::exit(die::DEFAULT_EXIT_CODE);
+    }
 }
 
 /// format_targets renders a target table.
-pub fn format_targets(targets: collections::BTreeMap<String, bool>) -> Result<String, String> {
+pub fn format_targets(targets: collections::BTreeMap<String, bool>) -> Result<String, CritError> {
     let target_col_header: String = "TARGET".to_string();
     let target_col_header_len: usize = target_col_header.len();
 
@@ -131,33 +176,39 @@ pub fn format_targets(targets: collections::BTreeMap<String, bool>) -> Result<St
         "{} ENABLED",
         target_col_header.pad_to_width(max_target_len)
     )
-    .map_err(|_| "error: unable to render target table format header".to_string())?;
+    .map_err(|e| CritError::IOError(format!("unable to render target table format header: {e}")))?;
 
     for (target, enabled) in targets {
-        write!(buf, "\n{} {}", target.pad_to_width(max_target_len), enabled)
-            .map_err(|_| "error: unable to render target table format row".to_string())?;
+        write!(buf, "\n{} {}", target.pad_to_width(max_target_len), enabled).map_err(|e| {
+            CritError::IOError(format!("unable to render target table format row: {e}"))
+        })?;
     }
 
     Ok(buf)
 }
 
 /// get_applications queries Cargo.toml for the list of binary application names.
-pub fn get_applications(feature_exclusion_pattern: regex::Regex) -> Result<Vec<String>, String> {
-    let bin_sections_result: Result<Vec<toml::Value>, String> = fs::read_to_string("Cargo.toml")
-        .map_err(|_| "error: unable to read Cargo.toml".to_string())
-        .and_then(|e| e.parse::<toml::Table>().map_err(|err| err.to_string()))
+pub fn get_applications(feature_exclusion_pattern: regex::Regex) -> Result<Vec<String>, CritError> {
+    let bin_sections: Vec<toml::Value> = fs::read_to_string("Cargo.toml")
+        .map_err(|e| CritError::IOError(format!("unable to read Cargo.toml: {e}")))
+        .and_then(|e| {
+            e.parse::<toml::Table>()
+                .map_err(|err| CritError::TOMLParseError(err.to_string()))
+        })
         .and_then(|e| {
             e.get("bin")
-                .ok_or("error: no binaries declared in Cargo.toml".to_string())
+                .ok_or(CritError::TOMLParseError(
+                    "no binaries declared in Cargo.toml".to_string(),
+                ))
                 .cloned()
         })
         .and_then(|e| {
             e.as_array()
-                .ok_or("error: binary section not an array in Cargo.toml".to_string())
+                .ok_or(CritError::TOMLParseError(
+                    "binary section not an array in Cargo.toml".to_string(),
+                ))
                 .cloned()
-        });
-
-    let bin_sections: Vec<toml::Value> = bin_sections_result?;
+        })?;
 
     let name_options: Vec<Option<&toml::Value>> = bin_sections
         .iter()
@@ -183,7 +234,9 @@ pub fn get_applications(feature_exclusion_pattern: regex::Regex) -> Result<Vec<S
         .collect();
 
     if name_options.contains(&None) {
-        return Err("error: binary missing name field in Cargo.toml".to_string());
+        return Err(CritError::TOMLParseError(
+            "binary missing name field in Cargo.toml".to_string(),
+        ));
     }
 
     let name_str_results: Vec<Option<&str>> = name_options
@@ -195,7 +248,9 @@ pub fn get_applications(feature_exclusion_pattern: regex::Regex) -> Result<Vec<S
         .collect();
 
     if name_str_results.contains(&None) {
-        return Err("error: binary name not a string in Cargo.toml".to_string());
+        return Err(CritError::TOMLParseError(
+            "binary name not a string in Cargo.toml".to_string(),
+        ));
     }
 
     Ok(name_str_results
@@ -205,78 +260,163 @@ pub fn get_applications(feature_exclusion_pattern: regex::Regex) -> Result<Vec<S
         .collect())
 }
 
-/// TargetConfig models a cross build operation.
-pub struct TargetConfig<'a> {
-    /// target denotes a Rust target triple.
-    pub target: &'a str,
+/// Crit models a multiplatform build operation.
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct Crit {
+    /// debug enables additional logging.
+    pub debug: Option<bool>,
 
-    /// cross_dir_pathbuf denotes the cross notion of target directory.
-    pub cross_dir_pathbuf: &'a path::PathBuf,
+    /// exclusion_targets skips matching targets (default: FRINGE_TARGETS).
+    pub exclusion_targets: Option<Vec<String>>,
 
-    /// bin_dir_pathbuf denotes the location of a destination directory
-    /// for copying artifacts into a recursive archive friendly
-    /// subdirectory tree.
-    pub bin_dir_pathbuf: &'a path::PathBuf,
+    /// exclusion_features skips matching features (default: CRATE_FEATURE_EXCLUSIONS).
+    pub exclusion_features: Option<Vec<String>>,
 
-    /// cross_args denotes any passthrough arguments to forward to cross.
-    pub cross_args: &'a Vec<String>,
+    /// banner denotes an optional parent directory prefix (e.g. "hello-1.0").
+    pub banner: Option<String>,
 
-    /// applications denotes the names of cargo binaries
-    /// expected to be produced during a cross/cargo build.
-    pub applications: &'a Vec<String>,
+    /// cross_args forwards additional flags to cross.
+    pub cross_args: Option<Vec<String>>,
+
+    /// enabled_applications caches active applications.
+    enabled_applications: Option<Vec<String>>,
 }
 
-impl TargetConfig<'_> {
-    /// build executes a cross build.
-    pub fn build(&self) -> Result<(), String> {
-        let target_dir_pathbuf: path::PathBuf = self.cross_dir_pathbuf.join(self.target);
-        let target_dir_str: &str = &target_dir_pathbuf.display().to_string();
+impl Crit {
+    /// load generates a Crit.
+    pub fn load(pth: &str) -> Result<Self, CritError> {
+        let toml_string = fs::read_to_string(pth)
+            .map_err(|_| CritError::IOError(format!("unable to read file: {pth}")))?;
+        let crit: Crit = toml::from_str(&toml_string)
+            .map_err(|e| CritError::TOMLParseError(e.message().to_string()))?;
+        Ok(crit)
+    }
 
-        let cross_output_result: Result<process::Output, String> = process::Command::new("cross")
-            .args([
-                "build",
-                "--target-dir",
-                target_dir_str,
-                "--target",
-                self.target,
-            ])
-            .args(self.cross_args.clone())
-            .stdout(process::Stdio::piped())
-            .stderr(process::Stdio::piped())
-            .output()
-            .map_err(|err| err.to_string());
+    /// get_targets queries rustup for the list of available Rust target triples.
+    pub fn get_targets(&self) -> Result<collections::BTreeMap<String, bool>, CritError> {
+        let target_exclusion_pattern = regex::Regex::new(&generate_target_exclusion_pattern(
+            &self
+                .exclusion_targets
+                .clone()
+                .unwrap_or(
+                    FRINGE_TARGETS
+                        .clone()
+                        .iter()
+                        .map(|e| e.to_string())
+                        .collect::<Vec<String>>(),
+                )
+                .iter()
+                .map(|e| e.as_ref())
+                .collect::<Vec<&str>>(),
+        ))
+        .map_err(|e| CritError::RegexParseError(e.to_string()))?;
 
-        let cross_output: process::Output = cross_output_result?;
+        let mut cmd = process::Command::new("rustup");
+        cmd.args(["target", "list"]);
+        cmd.stdout(process::Stdio::piped());
+        cmd.stderr(process::Stdio::piped());
 
-        if !cross_output.status.success() {
-            let cross_stderr: String =
-                String::from_utf8(cross_output.stderr).map_err(|err| err.to_string())?;
-
-            return Err(cross_stderr);
+        if let Some(true) = self.debug {
+            eprintln!("debug: running command: {:?}", cmd);
         }
 
-        for application in self.applications {
-            let dest_dir_pathbuf: path::PathBuf = self.bin_dir_pathbuf.join(self.target);
+        cmd.output()
+            .map_err(|e| CritError::IOError(format!("unable to run rustup: {e}")))
+            .and_then(|output| match output.status.success() {
+                // work around rustup writing error messages to stdout
+                false => Err(CritError::IOError(
+                    "unable to query rustup target list".to_string(),
+                )),
+                _ => String::from_utf8(output.stdout).map_err(|e| {
+                    CritError::IOError(format!("unable to decode rustup stdout stream: {e}"))
+                }),
+            })
+            .map(|text| {
+                text.lines()
+                    .filter(|line| RUSTUP_TARGET_PATTERN.is_match(line))
+                    .map(|line| {
+                        RUSTUP_TARGET_PATTERN
+                            .captures(line)
+                            .and_then(|e| e.get(1))
+                            .map(|e| e.as_str())
+                            .unwrap()
+                    })
+                    .map(|target| {
+                        (
+                            target.to_string(),
+                            !target_exclusion_pattern.is_match(target),
+                        )
+                    })
+                    .collect()
+            })
+    }
+
+    /// build_target executes a cross build.
+    pub fn build_target(&self, target: &str, bin_dir_path: &path::Path) -> Result<(), CritError> {
+        let target_dir_pathbuf = &CROSS_DIR_PATHBUF.join(target);
+        let target_dir_str: &str = &target_dir_pathbuf.display().to_string();
+        let base_args = [
+            "build",
+            "--target-dir",
+            target_dir_str,
+            "--target",
+            target,
+
+            // Release mode
+            "-r",
+        ]
+        .iter()
+        .map(|e| e.to_string())
+        .collect::<Vec<String>>();
+        let extra_args = self.cross_args.clone().unwrap_or_default();
+        let args = [base_args, extra_args].concat();
+
+        let mut cmd = process::Command::new("cross");
+        cmd.args(args);
+        cmd.stdout(process::Stdio::piped());
+        cmd.stderr(process::Stdio::piped());
+
+        if let Some(true) = self.debug {
+            eprintln!("debug: running command: {:?}", cmd);
+        }
+
+        let cross_output: process::Output = cmd
+            .output()
+            .map_err(|err| CritError::IOError(format!("unable to run cross: {err}")))?;
+
+        if !cross_output.status.success() {
+            let cross_stderr: String = String::from_utf8(cross_output.stderr)
+                .map_err(|err| CritError::IOError(format!("unable to decode stderr: {err}")))?;
+
+            return Err(CritError::IOError(cross_stderr));
+        }
+
+        let enabled_applications: Vec<String> =
+            self.enabled_applications.clone().unwrap_or_default();
+
+        for application in enabled_applications {
+            let dest_dir_pathbuf: path::PathBuf = bin_dir_path.join(target);
             let dest_dir_str: &str = &dest_dir_pathbuf.display().to_string();
 
-            fs::create_dir_all(dest_dir_str).map_err(|err| err.to_string())?;
+            fs::create_dir_all(dest_dir_str).map_err(|err| CritError::IOError(err.to_string()))?;
 
-            for extension in BINARY_FILE_EXTENSIONS.iter() {
-                for mode in BUILD_MODES.iter() {
+            for extension in BINARY_FILE_EXTENSIONS.clone() {
+                for mode in BUILD_MODES.clone() {
                     let mut source_pathbuf: path::PathBuf = target_dir_pathbuf
-                        .join(self.target)
+                        .join(target)
                         .join(mode)
-                        .join(application);
+                        .join(&application);
                     source_pathbuf.set_extension(extension);
 
                     if source_pathbuf.exists() {
                         let source_str: &str = &source_pathbuf.display().to_string();
 
-                        let mut dest_pathbuf: path::PathBuf = dest_dir_pathbuf.join(application);
+                        let mut dest_pathbuf: path::PathBuf = dest_dir_pathbuf.join(&application);
                         dest_pathbuf.set_extension(extension);
                         let dest_str: &str = &dest_pathbuf.display().to_string();
 
-                        fs::copy(source_str, dest_str).map_err(|err| err.to_string())?;
+                        fs::copy(source_str, dest_str)
+                            .map_err(|err| CritError::IOError(err.to_string()))?;
                     }
                 }
             }
@@ -284,10 +424,61 @@ impl TargetConfig<'_> {
 
         Ok(())
     }
+
+    /// run builds targets.
+    pub fn run(&mut self) -> Result<(), CritError> {
+        let targets: collections::BTreeMap<String, bool> = self.get_targets()?;
+
+        let enabled_targets: Vec<&str> = targets
+            .iter()
+            .filter(|&(_, &enabled)| enabled)
+            .map(|(target, _)| target.as_ref())
+            .collect();
+
+        if enabled_targets.is_empty() {
+            return Err(CritError::IOError("no targets enabled".to_string()));
+        }
+
+        let feature_exclusion_pattern = regex::Regex::new(&generate_feature_exclusion_pattern(
+            &self
+                .exclusion_features
+                .clone()
+                .unwrap_or(
+                    CRATE_FEATURE_EXCLUSIONS
+                        .clone()
+                        .iter()
+                        .map(|e| e.to_string())
+                        .collect::<Vec<String>>(),
+                )
+                .iter()
+                .map(|e| e.as_ref())
+                .collect::<Vec<&str>>(),
+        ))
+        .map_err(|e| CritError::RegexParseError(e.to_string()))?;
+
+        self.enabled_applications = Some(get_applications(feature_exclusion_pattern)?);
+
+        let bin_dir_pathbuf = if let Some(banner) = &self.banner
+            && !banner.is_empty()
+        {
+            &ARTIFACT_ROOT_PATH.join("bin").join(banner)
+        } else {
+            &ARTIFACT_ROOT_PATH.join("bin")
+        };
+
+        for target in enabled_targets {
+            eprintln!("building {}", target);
+            self.build_target(target, bin_dir_pathbuf)?;
+        }
+
+        eprintln!("artifacts copied to {:?}", bin_dir_pathbuf);
+
+        Ok(())
+    }
 }
 
 /// clean_containers removes leftover cross Docker containers.
-pub fn clean_containers() -> Result<(), String> {
+pub fn clean_containers(debug: bool) -> Result<(), CritError> {
     let cross_toml_path: &path::Path = path::Path::new("Cross.toml");
 
     if !cross_toml_path.exists() {
@@ -295,8 +486,11 @@ pub fn clean_containers() -> Result<(), String> {
     }
 
     let cross_config: toml::Table = fs::read_to_string("Cross.toml")
-        .map_err(|_| "error: unable to read Cross.toml".to_string())
-        .and_then(|e| e.parse::<toml::Table>().map_err(|err| err.to_string()))?;
+        .map_err(|err| CritError::IOError(format!("unable to read Cross.toml: {err}")))
+        .and_then(|e| {
+            e.parse::<toml::Table>()
+                .map_err(|err| CritError::IOError(err.to_string()))
+        })?;
 
     if !cross_config.contains_key("target") {
         return Ok(());
@@ -304,13 +498,13 @@ pub fn clean_containers() -> Result<(), String> {
 
     let blank_table: toml::Value = toml::Value::Table(toml::Table::new());
 
-    let targets_result: Result<&toml::Table, String> = cross_config
+    let targets: &toml::Table = cross_config
         .get("target")
         .unwrap_or(&blank_table)
         .as_table()
-        .ok_or("target section not a table in Cross.toml".to_string());
-
-    let targets: &toml::Table = targets_result?;
+        .ok_or(CritError::TOMLParseError(
+            "target section not a table in Cross.toml".to_string(),
+        ))?;
 
     let target_options: Vec<Option<&toml::Table>> = targets
         .iter()
@@ -318,7 +512,9 @@ pub fn clean_containers() -> Result<(), String> {
         .collect();
 
     if target_options.iter().any(|e| e.is_none()) {
-        return Err("error: target entry not a table in Cross.toml".to_string());
+        return Err(CritError::TOMLParseError(
+            "target entry not a table in Cross.toml".to_string(),
+        ));
     }
 
     let image_options: Vec<Option<String>> = target_options
@@ -333,7 +529,9 @@ pub fn clean_containers() -> Result<(), String> {
         .collect();
 
     if image_options.iter().any(|e| e.is_none()) {
-        return Err("error: target image not a string in Cross.toml".to_string());
+        return Err(CritError::TOMLParseError(
+            "target image not a string in Cross.toml".to_string(),
+        ));
     }
 
     let mut images: Vec<String> = image_options
@@ -347,26 +545,40 @@ pub fn clean_containers() -> Result<(), String> {
     // cross default image prefix
     images.push("ghcr.io/cross-rs".to_string());
 
-    let docker_ps_output: process::Output = process::Command::new("docker")
-        .args(["ps", "-a"])
-        .output()
-        .map_err(|_| "error: unable to run docker process list".to_string())?;
+    let mut cmd_docker_ps = process::Command::new("docker");
+    cmd_docker_ps.args(["ps", "-a"]);
 
-    if !docker_ps_output.status.success() {
-        let docker_ps_stderr = String::from_utf8(docker_ps_output.stderr)
-            .map_err(|_| "error: unable to decode docker process list stderr stream")?;
-
-        return Err(docker_ps_stderr);
+    if debug {
+        eprintln!("debug: running command: {:?}", cmd_docker_ps);
     }
 
-    let docker_ps_stdout: String = String::from_utf8(docker_ps_output.stdout)
-        .map_err(|_| "error: unable to decode docker process list stdout stream")?;
+    let docker_ps_output: process::Output = cmd_docker_ps
+        .output()
+        .map_err(|err| CritError::IOError(format!("unable to run docker process list: {err}")))?;
+
+    if !docker_ps_output.status.success() {
+        let docker_ps_stderr = String::from_utf8(docker_ps_output.stderr).map_err(|err| {
+            CritError::IOError(format!(
+                "unable to decode docker process list stderr stream: {err}"
+            ))
+        })?;
+
+        return Err(CritError::IOError(docker_ps_stderr));
+    }
+
+    let docker_ps_stdout: String = String::from_utf8(docker_ps_output.stdout).map_err(|err| {
+        CritError::IOError(format!(
+            "unable to decode docker process list stdout stream: {err}"
+        ))
+    })?;
 
     for line in docker_ps_stdout.lines() {
         let pattern: String = format!("([[:xdigit:]]{{12}})\\s+({})", images.join("|"));
 
-        let re: regex::Regex = regex::Regex::new(&pattern).map_err(|_| {
-            "image name introduced invalid Rust regular expression syntax".to_string()
+        let re: regex::Regex = regex::Regex::new(&pattern).map_err(|err| {
+            CritError::RegexParseError(format!(
+                "image name introduced invalid Rust regular expression syntax: {err}"
+            ))
         })?;
 
         if !re.is_match(line) {
@@ -377,20 +589,30 @@ pub fn clean_containers() -> Result<(), String> {
             .captures(line)
             .and_then(|e| e.get(1))
             .map(|e| e.as_str())
-            .ok_or("error: container id not a string in docker process list output".to_string())?;
+            .ok_or(CritError::IOError(
+                "container id not a string in docker process list output".to_string(),
+            ))?;
 
-        let docker_rm_output: process::Output = process::Command::new("docker")
-            .args(["rm", "-f", container_id])
-            .output()
-            .map_err(|_| "error: unable to run docker container removal".to_string())?;
+        let mut cmd_docker_rm = process::Command::new("docker");
+        cmd_docker_rm.args(["rm", "-f", container_id]);
+
+        if debug {
+            eprintln!("debug: running command: {:?}", cmd_docker_rm);
+        }
+
+        let docker_rm_output: process::Output = cmd_docker_rm.output().map_err(|err| {
+            CritError::IOError(format!("unable to run docker container removal: {err}"))
+        })?;
 
         if !docker_rm_output.status.success() {
             let docker_rm_stderr: String =
-                String::from_utf8(docker_rm_output.stderr).map_err(|_| {
-                    "error: unable to decode docker container removal stderr stream".to_string()
+                String::from_utf8(docker_rm_output.stderr).map_err(|err| {
+                    CritError::IOError(format!(
+                        "unable to decode docker container removal stderr stream: {err}"
+                    ))
                 })?;
 
-            return Err(docker_rm_stderr);
+            return Err(CritError::IOError(docker_rm_stderr));
         }
     }
 
@@ -398,13 +620,16 @@ pub fn clean_containers() -> Result<(), String> {
 }
 
 /// clean_artifact_root removes CRIT_ARTIFACT_ROOT directory.
-pub fn clean_artifact_root(artifact_root_path: &path::Path) -> Result<(), String> {
-    if !artifact_root_path.exists() {
+pub fn clean_artifact_root() -> Result<(), CritError> {
+    if !&ARTIFACT_ROOT_PATH.exists() {
         return Ok(());
     }
 
-    fs::remove_dir_all(CRIT_ARTIFACT_ROOT)
-        .map_err(|_| "error: unable to remove crit artifact root directory".to_string())
+    fs::remove_dir_all(CRIT_ARTIFACT_ROOT).map_err(|err| {
+        CritError::IOError(format!(
+            "unable to remove crit artifact root directory: {err}"
+        ))
+    })
 }
 
 /// clean removes:
@@ -412,7 +637,7 @@ pub fn clean_artifact_root(artifact_root_path: &path::Path) -> Result<(), String
 /// * cross Docker containers
 /// * CRIT_ARTIFACT_ROOT directory
 ///
-pub fn clean(artifact_root_path: &path::Path) {
-    _ = clean_containers();
-    _ = clean_artifact_root(artifact_root_path);
+pub fn clean(debug: bool) -> Result<(), CritError> {
+    clean_containers(debug)?;
+    clean_artifact_root()
 }

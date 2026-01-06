@@ -29,8 +29,6 @@ aarch64-unknown-linux-musl
 ...
 ```
 
-By default, crit builds in release mode (`-- -r`).
-
 See `crit -h` for more options.
 
 # CRATE
@@ -86,6 +84,10 @@ BSD-2-Clause
 
 tar is a portable archiver suitable for creating `*.tgz` tarball archives. Users can then download the tarball and extract the executable relevant to their platform. Tarballs are especially well suited for use in Docker containers, as the tar command is more likely to be installed than unzip.
 
+# CONFIGURATION
+
+See [CONFIGURATION.md](CONFIGURATION.md).
+
 # CONTRIBUTING
 
 For more details on developing crit itself, see [DEVELOPMENT.md](DEVELOPMENT.md).
@@ -96,7 +98,7 @@ For more details on developing crit itself, see [DEVELOPMENT.md](DEVELOPMENT.md)
 
 Check that your project is able to build with conventional `cross` or `cargo` commands against a single target. A project that does not compile against a single target, will naturally have difficulty when attempting to cross-compile for multiple targets.
 
-Note that Rust introduces new, under-supported targets all the time. We try to keep up, but sometimes we miss a few of these. Regardless, you can declare which targets are disabled, by writing a custom pattern for the `-e` / `--exclude-targets` flag.
+Note that Rust introduces new, under-supported targets all the time. We try to keep up, but sometimes we miss a few of these. Regardless, you can declare which targets are disabled, by configuring custom patterns.
 
 Some targets may lack stock support for the Rust `std` library. This is common for bare metal or embedded targets. For these kinds of targets, you have several strategies for resolution:
 
@@ -129,7 +131,7 @@ Some cross-compilation performance tips:
 * Keep the host awake (see Amphetamine / The Caffeine / Caffeine above)
 * Reserve cross-compilation as a release-time step, distinct from more rapid development tasks
 * Perform cross-compilation in a CI/CD pipeline with more CPU, disk, and RAM resources
-* Exclude more targets (e.g., `-e <target pattern>`)
+* Exclude more targets
 
 # SEE ALSO
 
