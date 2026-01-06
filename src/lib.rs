@@ -361,7 +361,6 @@ impl Crit {
             target_dir_str,
             "--target",
             target,
-
             // Release mode
             "-r",
         ]
