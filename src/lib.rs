@@ -30,6 +30,7 @@ pub static FRINGE_TARGETS: sync::LazyLock<Vec<&str>> = sync::LazyLock::new(|| {
         "fuchsia",
         "gnullvm",
         "gnux32",
+        "i686-pc-windows-gnu",
         "ios",
         "loongarch",
         "msvc",
