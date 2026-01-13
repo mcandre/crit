@@ -39,33 +39,9 @@ https://crates.io/crates/crit
 
 https://docs.rs/crit/latest/crit/
 
-# INSTALL
+# INSTALLATION
 
-We support several installation methods.
-
-## Precompiled Binaries
-
-https://github.com/mcandre/crit/releases
-
-1. Download release archive.
-2. Extract archive.
-3. Select executables for your target platform.
-4. Copy executabless to a convenient location, e.g. `$HOME/bin`.
-5. Ensure location is registered in `$PATH`.
-
-## Docker
-
-```sh
-docker pull n4jm4/crit
-```
-
-## Build from Source
-
-```sh
-cargo install --force --path .
-```
-
-For more details on developing crit itself, see [DEVELOPMENT.md](DEVELOPMENT.md).
+See [INSTALL.md](INSTALL.md).
 
 # LICENSE
 
