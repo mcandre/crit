@@ -39,15 +39,27 @@ https://crates.io/crates/crit
 
 https://docs.rs/crit/latest/crit/
 
-# DOCKER HUB
+# INSTALL
 
-https://hub.docker.com/r/n4jm4/crit
+We support several installation methods.
 
-# DOWNLOAD
+## Precompiled Binaries
 
 https://github.com/mcandre/crit/releases
 
-# INSTALL FROM SOURCE
+1. Download release archive.
+2. Extract archive.
+3. Select executables for your target platform.
+4. Copy executabless to a convenient location, e.g. `$HOME/bin`.
+5. Ensure location is registered in `$PATH`.
+
+## Docker
+
+```console
+$ docker pull n4jm4/crit
+```
+
+## Source
 
 ```console
 $ cargo install --force --path .
