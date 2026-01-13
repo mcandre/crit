@@ -65,7 +65,7 @@ docker pull n4jm4/crit
 cargo install --force --path .
 ```
 
-For more details on developing chandler itself, see [DEVELOPMENT.md](DEVELOPMENT.md).
+For more details on developing crit itself, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 # LICENSE
 
