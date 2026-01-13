@@ -55,15 +55,17 @@ https://github.com/mcandre/crit/releases
 
 ## Docker
 
-```console
-$ docker pull n4jm4/crit
+```sh
+docker pull n4jm4/crit
 ```
 
-## Source
+## Compile from Source
 
-```console
-$ cargo install --force --path .
+```sh
+cargo install --force --path .
 ```
+
+For more details on developing chandler itself, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 # LICENSE
 
