@@ -102,10 +102,6 @@ tar is a portable archiver suitable for creating `*.tgz` tarball archives. Users
 
 See [CONFIGURATION.md](CONFIGURATION.md).
 
-# CONTRIBUTING
-
-For more details on developing crit itself, see [DEVELOPMENT.md](DEVELOPMENT.md).
-
 # FAQ
 
 ## Help, some targets are broken?
