@@ -59,7 +59,7 @@ https://github.com/mcandre/crit/releases
 docker pull n4jm4/crit
 ```
 
-## Compile from Source
+## Build from Source
 
 ```sh
 cargo install --force --path .
