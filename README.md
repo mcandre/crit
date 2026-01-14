@@ -9,7 +9,7 @@ _/ ___\_  __ \  \   __\
      \/
 ```
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/n4jm4/crit)](https://hub.docker.com/r/n4jm4/crit) [![Donate](https://img.shields.io/badge/GUMROAD-36a9ae?style=flat&logo=gumroad&logoColor=white)](https://mcandre.gumroad.com/)
+[![Docker Pulls](https://img.shields.io/docker/pulls/n4jm4/crit)](https://hub.docker.com/r/n4jm4/crit) [![Crates.io Downloads (latest version)](https://img.shields.io/crates/dv/crit?label=crate%20downloads)](https://crates.io/crates/crit) [![Donate](https://img.shields.io/badge/GUMROAD-36a9ae?style=flat&logo=gumroad&logoColor=white)](https://mcandre.gumroad.com/)
 
 # SUMMARY
 
