@@ -6,7 +6,6 @@
 * [Rust](https://www.rust-lang.org/en-US/)
 * [cross](https://crates.io/crates/cross) 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa
 * [Docker](https://www.docker.com/) 28.0.1+
-* [GNU](https://www.gnu.org/software/tar/)/[BSD](https://man.freebsd.org/cgi/man.cgi?tar(1))/[Windows](https://ss64.com/nt/tar.html) tar with gzip support
 * Provision additional dev tools with `make -f install.mk`
 
 ## Recommended
