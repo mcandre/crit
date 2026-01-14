@@ -9,7 +9,7 @@ _/ ___\_  __ \  \   __\
      \/
 ```
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/n4jm4/crit)](https://hub.docker.com/r/n4jm4/crit) [![Crates.io Downloads (latest version)](https://img.shields.io/crates/dv/crit?label=crate%20downloads)](https://crates.io/crates/crit) [![Donate](https://img.shields.io/badge/GUMROAD-36a9ae?style=flat&logo=gumroad&logoColor=white)](https://mcandre.gumroad.com/)
+[![Docker Pulls](https://img.shields.io/docker/pulls/n4jm4/crit)](https://hub.docker.com/r/n4jm4/crit) [![Crates.io Downloads (latest version)](https://img.shields.io/crates/dv/crit?label=crate%20downloads)](https://crates.io/crates/crit) [![Test](https://github.com/mcandre/crit/actions/workflows/test.yml/badge.svg)](https://github.com/mcandre/crit/actions/workflows/test.yml) [![license](https://img.shields.io/badge/license-BSD-3)](LICENSE.md) [![Donate](https://img.shields.io/badge/GUMROAD-36a9ae?style=flat&logo=gumroad&logoColor=white)](https://mcandre.gumroad.com/)
 
 # SUMMARY
 
@@ -31,21 +31,9 @@ aarch64-unknown-linux-musl
 
 See `crit -h` for more options.
 
-# CRATE
-
-https://crates.io/crates/crit
-
-# API DOCUMENTATION
-
-https://docs.rs/crit/latest/crit/
-
 # INSTALLATION
 
 See [INSTALL.md](INSTALL.md).
-
-# LICENSE
-
-BSD-2-Clause
 
 # RUNTIME REQUIREMENTS
 
