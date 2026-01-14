@@ -1,7 +1,5 @@
 # crit: Rust cross-compiler
 
-[![Donate](https://img.shields.io/badge/GUMROAD-36a9ae?style=flat&logo=gumroad&logoColor=white)](https://mcandre.gumroad.com/)
-
 ```text
              .__  __
   ___________|__|/  |_
@@ -10,6 +8,8 @@ _/ ___\_  __ \  \   __\
  \___  >__|  |__||__|
      \/
 ```
+
+[![Docker Pulls](https://img.shields.io/docker/pulls/n4jm4/crit)](https://hub.docker.com/r/n4jm4/crit) [![Donate](https://img.shields.io/badge/GUMROAD-36a9ae?style=flat&logo=gumroad&logoColor=white)](https://mcandre.gumroad.com/)
 
 # SUMMARY
 
