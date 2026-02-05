@@ -114,6 +114,7 @@ Some cross-compilation performance tips:
 * [cross-toolchains](https://github.com/cross-rs/cross-toolchains) provisions cross Docker images
 * [cubejs/rust-cross](https://hub.docker.com/r/cubejs/rust-cross/tags) Docker images for additional cross targets
 * [factorio](https://github.com/mcandre/factorio) generates Go application ports based on the standard Go toolchain
+* [rockhopper](https://github.com/mcandre/rockhopper) generates packages for many operating systems
 * [tuggy](https://github.com/mcandre/tuggy) automates multiplatform Docker image builds
 * [unmake](https://github.com/mcandre/unmake), a linter for makefiles
 * [WASM](https://webassembly.org/) provides a portable interface for C/C++ code.
