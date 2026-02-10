@@ -21,3 +21,6 @@ name = "crit"
 [[bin]]
 name = "crit"
 path = "src/crit.rs"
+
+[profile.release]
+strip = "symbols"

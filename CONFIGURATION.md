@@ -7,8 +7,15 @@ crit loads an optional `crit.toml` file in the current working directory.
 ```toml
 # debug = true
 
+# Compile musl targets fully static
+#
+# rustflags."musl" = "-C target-feature=+crt-static"
+
+# All functional, non-mobile, non-embedded cross targets
+#
 # exclusion_targets = [
 #     "android",
+#     "arm64ec-pc-windows-msvc",
 #     "cuda",
 #     "emscripten",
 #     "fortanix",
@@ -18,7 +25,32 @@ crit loads an optional `crit.toml` file in the current working directory.
 #     "i686-pc-windows-gnu",
 #     "ios",
 #     "loongarch",
-#     "msvc",
+#     "none-eabi",
+#     "ohos",
+#     "pc-solaris",
+#     "powerpc64le-unknown-linux-musl",
+#     "redox",
+#     "riscv64gc-unknown-linux-musl",
+#     "sparcv9-sun-solaris",
+#     "uefi",
+#     "unknown-none",
+#     "wasm",
+# ]
+
+# Skip GNU targets and 32 bit targets
+#
+# exclusion_targets = [
+#     "android",
+#     "arm",
+#     "cuda",
+#     "emscripten",
+#     "fortanix",
+#     "fuchsia",
+#     "gnu",
+#     "i586",
+#     "i686",
+#     "ios",
+#     "loongarch",
 #     "none-eabi",
 #     "ohos",
 #     "pc-solaris",
@@ -45,6 +77,18 @@ crit loads an optional `crit.toml` file in the current working directory.
 Default: `false`
 
 Enables additional logging.
+
+# rustflags
+
+Default:
+
+```sh
+$RUSTFLAGS
+```
+
+Maps target triple patterns to RUSTFLAGS.
+
+Patterns use Rust [regex](https://crates.io/crates/regex) notation.
 
 # exclusion_targets
 

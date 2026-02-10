@@ -8,8 +8,8 @@ use pad::PadStr;
 use serde::{Deserialize, Serialize};
 
 use std::collections;
-use std::fmt;
-use std::fmt::Write;
+use std::env;
+use std::fmt::{self, Write};
 use std::fs;
 use std::path;
 use std::process;
@@ -39,6 +39,7 @@ pub static RUSTUP_TARGET_PATTERN: sync::LazyLock<regex::Regex> =
 pub static FRINGE_TARGETS: sync::LazyLock<Vec<&str>> = sync::LazyLock::new(|| {
     vec![
         "android",
+        "arm64ec-pc-windows-msvc",
         "cuda",
         "emscripten",
         "fortanix",
@@ -48,7 +49,6 @@ pub static FRINGE_TARGETS: sync::LazyLock<Vec<&str>> = sync::LazyLock::new(|| {
         "i686-pc-windows-gnu",
         "ios",
         "loongarch",
-        "msvc",
         "none-eabi",
         "ohos",
         "pc-solaris",
@@ -266,6 +266,9 @@ pub struct Crit {
     /// debug enables additional logging.
     pub debug: Option<bool>,
 
+    /// rustflags maps target triple patterns to custom RUSTFLAGS settings (default: $RUSTFLAGS).
+    pub rustflags: Option<collections::BTreeMap<String, String>>,
+
     /// exclusion_targets skips matching targets (default: FRINGE_TARGETS).
     pub exclusion_targets: Option<Vec<String>>,
 
@@ -279,6 +282,7 @@ pub struct Crit {
     pub cross_args: Option<Vec<String>>,
 
     /// enabled_applications caches active applications.
+    #[serde(skip)]
     enabled_applications: Option<Vec<String>>,
 }
 
@@ -374,6 +378,22 @@ impl Crit {
         cmd.args(args);
         cmd.stdout(process::Stdio::piped());
         cmd.stderr(process::Stdio::piped());
+
+        let mut rustflags: Vec<String> = match env::var("RUSTFLAGS") {
+            Ok(e) => vec![e],
+            _ => Vec::new(),
+        };
+
+        for (target_pattern_string, rf) in self.rustflags.clone().unwrap_or_default().into_iter() {
+            let target_pattern_regex = regex::Regex::new(&target_pattern_string)
+                .map_err(|e| CritError::RegexParseError(e.to_string()))?;
+
+            if target_pattern_regex.is_match(target) {
+                rustflags.push(rf);
+            }
+        }
+
+        cmd.env("RUSTFLAGS", rustflags.join(" "));
 
         if let Some(true) = self.debug {
             eprintln!("debug: running command: {:?}", cmd);

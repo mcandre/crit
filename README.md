@@ -24,8 +24,8 @@ $ crit
 
 $ ls .crit/bin
 aarch64-apple-darwin
+aarch64-pc-windows-msvc
 aarch64-unknown-linux-gnu
-aarch64-unknown-linux-musl
 ...
 ```
 
@@ -105,7 +105,7 @@ Some cross-compilation performance tips:
 * Keep the host awake (see Amphetamine / The Caffeine / Caffeine above)
 * Reserve cross-compilation as a release-time step, distinct from more rapid development tasks
 * Perform cross-compilation in a CI/CD pipeline with more CPU, disk, and RAM resources
-* Exclude more targets
+* Exclude more targets (e.g. 32 bit targets, GNU targets, or any targets with niche support)
 
 # SEE ALSO
 
