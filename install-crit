@@ -4,7 +4,6 @@ set -euf
 
 GH_FORK='mcandre'
 APP='crit'
-VERSION='0.0.15'
 DEST="$HOME/.local/bin"
 
 fallback() {
@@ -55,8 +54,8 @@ uname_arch_to_rust_arch() {
 UNAME="$(uname -a)"
 OS="$(uname_to_rust_os "$UNAME")"
 ARCH="$(uname_arch_to_rust_arch "$(uname -m)")"
-TARBALL="$APP-$VERSION-$ARCH-$OS.tgz"
-curl -LO "https://github.com/$GH_FORK/$APP/releases/download/v${VERSION}/$TARBALL"
+TARBALL="$APP-$ARCH-$OS.tgz"
+curl -LO "https://github.com/$GH_FORK/$APP/releases/download/latest/$TARBALL"
 mkdir -p "$DEST"
 tar -C "$DEST" -xzf "$TARBALL"
 rm -rf "$TARBALL"

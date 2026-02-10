@@ -93,7 +93,7 @@ lint: \
 	rustfmt
 
 port: crit
-	./port -C .crit/bin $(BANNER)
+	./port -C .crit/bin -a crit $(BANNER)
 
 publish:
 	cargo publish
