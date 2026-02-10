@@ -4,7 +4,7 @@ set -euf
 
 GH_FORK='mcandre'
 APP='crit'
-VERSION='0.0.14'
+VERSION='0.0.15'
 DEST="$HOME/.local/bin"
 
 fallback() {

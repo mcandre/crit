@@ -30,7 +30,7 @@
 	clean-example \
 	clean-ports
 
-VERSION=0.0.14
+VERSION=0.0.15
 BANNER=crit-$(VERSION)
 
 all: build
