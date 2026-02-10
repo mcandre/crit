@@ -59,7 +59,7 @@ OS="$(uname_to_rust_os "$UNAME")"
 ARCH="$(uname_arch_to_rust_arch "$(uname -m)")"
 
 curl -LO "https://github.com/$GH_FORK/$APP/releases/download/v${VERSION}/$APP-$VERSION.tgz"
-tar xf "$APP-${VERSION}.tgz"
+tar xzf "$APP-${VERSION}.tgz"
 
 if [ ! -d "$APP-$VERSION/$ARCH-$OS" ]; then
     echo "error: unsupported platform. uname -a: $UNAME"
