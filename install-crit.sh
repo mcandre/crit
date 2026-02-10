@@ -1,12 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 unset IFS
 set -euf
 
 GH_FORK='mcandre'
 APP='crit'
-EXECUTABLES='crit'
 VERSION='0.0.14'
-
 DEST="$HOME/.local/bin"
 
 fallback() {
@@ -57,21 +55,9 @@ uname_arch_to_rust_arch() {
 UNAME="$(uname -a)"
 OS="$(uname_to_rust_os "$UNAME")"
 ARCH="$(uname_arch_to_rust_arch "$(uname -m)")"
-
-curl -LO "https://github.com/$GH_FORK/$APP/releases/download/v${VERSION}/$APP-$VERSION.tgz"
-tar xzf "$APP-${VERSION}.tgz"
-
-if [ ! -d "$APP-$VERSION/$ARCH-$OS" ]; then
-    echo "error: unsupported platform. uname -a: $UNAME"
-    fallback
-fi
-
+TARBALL="$APP-$VERSION-$ARCH-$OS.tgz"
+curl -LO "https://github.com/$GH_FORK/$APP/releases/download/v${VERSION}/$TARBALL"
 mkdir -p "$DEST"
-set -- "$EXECUTABLES"
-
-for EXECUTABLE in "$@"; do
-    cp "$APP-$VERSION/$ARCH-$OS/$EXECUTABLE" "$DEST"
-done
-
+tar -C "$DEST" -xzf "$TARBALL"
+rm -rf "$TARBALL"
 echo "installed $APP binaries to $DEST"
-rm -rf "$APP-$VERSION" "$APP-$VERSION.tgz"

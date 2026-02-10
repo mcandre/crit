@@ -1,14 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 unset IFS
-set -eu
-
-EXECUTABLES='crit'
+set -euf
 
 DEST="$HOME/.local/bin"
+EXECUTABLES=(crit)
 
-set -- "$EXECUTABLES"
-
-for EXECUTABLE in "$@"; do
+for EXECUTABLE in "${EXECUTABLES[@]}"; do
     F="$DEST/$EXECUTABLE"
 
     # Idempotent
@@ -17,4 +14,4 @@ for EXECUTABLE in "$@"; do
     fi
 done
 
-echo "removed executables: ($EXECUTABLES) from: $DEST"
+echo "removed executables: (${EXECUTABLES[*]}) from: $DEST"
