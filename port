@@ -51,4 +51,4 @@ find "$SOURCE" -type d -depth 1 -print0 | while IFS= read -r -d '' D; do
     cd "$SOURCE"
 done
 
-echo "tarballs copied to $DIR/$BANNER-ports"
+echo "tarballs copied to \"$DIR/$BANNER-ports\""
