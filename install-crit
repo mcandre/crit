@@ -55,17 +55,7 @@ UNAME="$(uname -a)"
 OS="$(uname_to_rust_os "$UNAME")"
 ARCH="$(uname_arch_to_rust_arch "$(uname -m)")"
 TARBALL="$APP-$ARCH-$OS.tgz"
-RELEASES="$(curl -L "https://api.github.com/repos/$GH_FORK/$APP/releases/latest")"
-ASSET="$(jq ".assets | first(.[] | select(.name==\"$TARBALL\"))" <<< "$RELEASES")"
-
-if [ -z "$ASSET" ]; then
-    echo "error: unsupported platform. uname -a: $(uname -a)" >&2
-    fallback
-    exit 1
-fi
-
-URL="$(jq -r '.browser_download_url' <<< "$ASSET")"
-curl -LO "$URL"
+curl -LO "https://github.com/$GH_FORK/$APP/releases/latest/download/$TARBALL"
 mkdir -p "$DEST"
 tar -C "$DEST" -xzf "$TARBALL"
 rm -rf "$TARBALL"
