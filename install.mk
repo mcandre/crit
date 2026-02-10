@@ -10,7 +10,6 @@ all:
 		cargo-audit \
 		cargo-cache \
 		cargo-edit \
-		chandler@0.0.9 \
 		tuggy@0.0.29
 	cargo install --force \
 		cross \

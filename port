@@ -1,0 +1,54 @@
+#!/bin/bash
+unset IFS
+set -euo pipefail
+
+usage() {
+    printf "Usage: %s [<OPTION>] <banner>\n" "$0"
+    printf "\n"
+    printf -- "-C <dir>\tChange directory (default: .)\n"
+}
+
+DIR='.'
+
+while [ "$#" -ge 1 ]; do
+    case "$1" in
+    '-C')
+        shift
+
+        if [ "$#" -eq 0 ]; then
+            usage
+        fi
+
+        DIR="$1"
+        shift
+        ;;
+    *)
+        break
+        ;;
+    esac
+done
+
+if [ "$#" != '1' ]; then
+    usage
+    exit 1
+fi
+
+BANNER="$1"
+SOURCE="$(readlink -f "$DIR/$BANNER")"
+mkdir -p "$DIR/$BANNER-ports"
+PORTS="$(readlink -f "$DIR/$BANNER-ports")"
+
+find "$SOURCE" -type d -depth 1 -print0 | while IFS= read -r -d '' D; do
+    D="${D#"$SOURCE"/}"
+    MODE='--mode=0755'
+
+    if [ "$(find "$SOURCE/$D" -type f -name '*.*')" != '' ]; then
+        MODE='--mode=0644'
+    fi
+
+    cd "$SOURCE/$D"
+    tar "$MODE" -czf "$PORTS/$BANNER-$D.tgz" -- *
+    cd "$SOURCE"
+done
+
+echo "tarballs copied to $DIR/$BANNER-ports"

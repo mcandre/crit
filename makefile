@@ -92,8 +92,8 @@ lint: \
 	doc \
 	rustfmt
 
-port: crit
-	chandler -C .crit/bin -czf $(BANNER).tgz $(BANNER)
+port: # crit
+	./port -C .crit/bin $(BANNER)
 
 publish:
 	cargo publish
