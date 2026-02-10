@@ -12,15 +12,39 @@ We support several installation methods.
 cargo install --force cross --git https://github.com/cross-rs/cross --rev 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa
 ```
 
+# CURL
+
+## Requirements
+
+* a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))
+* Ensure `$HOME/.local/bin` registered in your shell's `PATH`
+* [curl](https://curl.se/)
+
+```sh
+curl -L https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/install-crit | sh
+```
+
+## Uninstall
+
+```sh
+curl -L https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/uninstall-crit | sh
+```
+
 # PRECOMPILED BINARIES
 
 https://github.com/mcandre/crit/releases
 
-1. Download release archive.
-2. Extract archive.
-3. Select executables for your target platform.
-4. Copy executabless to a convenient location, e.g. `$HOME/bin`.
-5. Ensure location is registered in `$PATH`.
+1. Download a tarball corresponding to your environment's architecture and OS.
+2. Extract executables into a suitable directory.
+
+   Examples:
+
+   * `~/.local/bin`
+   * `~/bin`
+   * `/usr/local/bin`
+   * `~\AppData\Local`
+
+3. Ensure the directory is registered in your shell's `PATH`.
 
 # DOCKER
 
