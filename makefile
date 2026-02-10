@@ -92,7 +92,7 @@ lint: \
 	doc \
 	rustfmt
 
-port: # crit
+port: crit
 	./port -C .crit/bin $(BANNER)
 
 publish:
