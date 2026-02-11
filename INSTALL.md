@@ -71,15 +71,3 @@ Supported host environments:
 * Linux (aarch64 / x86_64)
 * Illumos (x86_64)
 * Windows (aarch64 / x86_64) native or [WSL](https://learn.microsoft.com/en-us/windows/wsl/)
-
-# INSTALL (DOCKER)
-
-The Docker installation method downloads crit itself as a Docker image.
-
-```sh
-docker pull n4jm4/crit
-```
-
-## System Requirements
-
-* [Docker in Docker](https://www.docker.com/resources/docker-in-docker-containerized-ci-workflows-dockercon-2023/)

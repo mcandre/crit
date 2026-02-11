@@ -13,9 +13,6 @@
 	clippy \
 	crit \
 	doc \
-	docker-build \
-	docker-push \
-	docker-test \
 	install \
 	lint \
 	port \
@@ -72,16 +69,6 @@ crit:
 
 doc:
 	cargo doc
-
-docker-build:
-	tuggy -t n4jm4/crit:$(VERSION) --load
-
-docker-push:
-	tuggy -t n4jm4/crit:$(VERSION) -a n4jm4/crit --push
-
-docker-test:
-	tuggy -t n4jm4/crit:test --load
-	tuggy -t n4jm4/crit:test --push
 
 install:
 	cargo install --force --path .

@@ -9,8 +9,7 @@ all:
 	cargo install --force \
 		cargo-audit \
 		cargo-cache \
-		cargo-edit \
-		tuggy@0.0.29
+		cargo-edit
 	cargo install --force \
 		cross \
 			--git https://github.com/cross-rs/cross \
