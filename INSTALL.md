@@ -28,7 +28,7 @@ Remove the application executables from the selected directory.
 
 ## System Requirements
 
-A 64-bit host platform:
+Supported host environments:
 
 * FreeBSD (x86_64)
 * macOS (aarch64 / x86_64)

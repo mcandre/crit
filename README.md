@@ -51,7 +51,7 @@ curl -L https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/uninstall
 
 ## System Requirements
 
-A 64-bit host platform:
+Supported host environments:
 
 * FreeBSD (x86_64)
 * macOS (aarch64 / x86_64)
