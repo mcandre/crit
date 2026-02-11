@@ -13,7 +13,7 @@ _/ ___\_  __ \  \   __\
 
 # SUMMARY
 
-`crit` automates crosscompiling Rust applications for many different kinds of target platforms.
+`crit` automates cross-compiling Rust applications for many different kinds of target platforms.
 
 # EXAMPLE
 
