@@ -133,15 +133,18 @@ Some cross-compilation performance tips:
 * Perform cross-compilation in a CI/CD pipeline with more CPU, disk, and RAM resources
 * Exclude more targets (e.g. 32 bit targets, GNU targets, or any targets with niche support)
 
-# SEE ALSO
+# RESOURCES
 
-* [chandler](https://github.com/mcandre/chandler) normalizes executable archives
+crit specializes in crosscompiling Rust applications for multiple platforms.
+
+In addition to crit, we cite related resources, including prior art, personal plugs, and tools to support developing portable applications (including non-Rust projects)!
+
 * [cross](https://github.com/cross-rs/cross) underlying cross-compiler system
 * [cross-toolchains](https://github.com/cross-rs/cross-toolchains) provisions cross Docker images
-* [cubejs/rust-cross](https://hub.docker.com/r/cubejs/rust-cross/tags) Docker images for additional cross targets
-* [factorio](https://github.com/mcandre/factorio) generates Go application ports based on the standard Go toolchain
-* [rockhopper](https://github.com/mcandre/rockhopper) generates packages for many operating systems
-* [tuggy](https://github.com/mcandre/tuggy) automates multiplatform Docker image builds
-* [unmake](https://github.com/mcandre/unmake), a linter for makefiles
+* [mcandre/chandler](https://github.com/mcandre/chandler) normalizes executable archives
+* [mcandre/factorio](https://github.com/mcandre/factorio) generates Go application ports based on the standard Go toolchain
+* [mcandre/rockhopper](https://github.com/mcandre/rockhopper) generates packages for many operating systems
+* [mcandre/tuggy](https://github.com/mcandre/tuggy) automates multiplatform Docker image builds
+* [mcandre/unmake](https://github.com/mcandre/unmake), a linter for makefiles
 * [WASM](https://webassembly.org/) provides a portable interface for C/C++ code.
 * [xgo](https://github.com/techknowlogick/xgo) supports Go projects with native cgo dependencies.
