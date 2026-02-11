@@ -133,13 +133,9 @@ Some cross-compilation performance tips:
 * Perform cross-compilation in a CI/CD pipeline with more CPU, disk, and RAM resources
 * Exclude more targets (e.g. 32 bit targets, GNU targets, or any targets with niche support)
 
-# SEE ALSO
+# RESOURCES
 
-crit specializes in crosscompiling Rust applications for multiple platforms.
-
-In addition to crit, we cite related resources, including prior art, personal plugs, and tools for developing portable applications (including non-Rust projects)!
-
-Resources:
+Prior art, personal plugs, and tools for developing portable applications (including non-Rust projects)!
 
 * [cross](https://github.com/cross-rs/cross) provides the underlying cross-compiler system that powers crit.
 * [cross-toolchains](https://github.com/cross-rs/cross-toolchains) provisions cross Docker images.
