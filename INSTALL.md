@@ -35,6 +35,7 @@ Supported host environments:
 
 Prerequisites:
 
+* [bash](https://www.gnu.org/software/bash/) 4+
 * [curl](https://curl.se/)
 
 # INSTALL (PRECOMPILED BINARIES)
