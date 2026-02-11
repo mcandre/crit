@@ -36,7 +36,8 @@ See `crit -h` for more options.
 ## Install
 
 ```sh
-curl -L https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/install-crit | sh
+curl -LO https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/install-crit
+sh install-crit
 ```
 
 ## Postinstall
@@ -46,7 +47,8 @@ Ensure `$HOME/.local/bin` is registered with your shell's `PATH` environment var
 ## Uninstall
 
 ```sh
-curl -L https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/uninstall-crit | sh
+curl -LO https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/uninstall-crit
+sh uninstall-crit
 ```
 
 ## System Requirements
