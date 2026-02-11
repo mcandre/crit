@@ -33,38 +33,17 @@ See `crit -h` for more options.
 
 # DOWNLOAD
 
-## Install
-
 ```sh
-curl -L https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/install-crit | sh
-```
-
-## Postinstall
-
-Ensure `$HOME/.local/bin` is registered with your shell's `PATH` environment variable.
-
-## Uninstall
-
-```sh
-curl -L https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/uninstall-crit | sh
+cargo install crit
 ```
 
 ## System Requirements
 
-Supported host environments:
-
-* FreeBSD (x86_64)
-* macOS (aarch64 / x86_64)
-* NetBSD (x86_64)
-* Linux (aarch64 / x86_64)
-* Illumos (x86_64)
-* Windows (aarch64 / x86_64) via [WSL](https://learn.microsoft.com/en-us/windows/wsl/)
-
-Prerequisites:
-
-* [curl](https://curl.se/)
+* [cargo](https://doc.rust-lang.org/cargo/)
 
 For more installation methods, see our [install guide](INSTALL.md).
+
+For more details on developing crit itself, see our [development guide](DEVELOPMENT.md).
 
 # RUNTIME REQUIREMENTS
 

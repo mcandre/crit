@@ -1,3 +1,9 @@
+# DEVELOPMENT GUIDE
+
+crit follows standard, cargo based operations for compiling and unit testing Rust code.
+
+For advanced operations, such as linting and generating install media artifacts, we further supplement with some software industry tools.
+
 # BUILDTIME REQUIREMENTS
 
 * a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))

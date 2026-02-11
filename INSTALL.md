@@ -1,6 +1,41 @@
 # INSTALL GUIDE
 
-In addition to curl, we support alternative installation methods.
+In addition to cargo, crit supports alternative installation methods.
+
+# INSTALL (CURL)
+
+curl based installs automatically download and extract precompiled binaries.
+
+## Install
+
+```sh
+curl -L https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/install-crit | sh
+```
+
+## Postinstall
+
+Ensure `$HOME/.local/bin` is registered with your shell's `PATH` environment variable.
+
+## Uninstall
+
+```sh
+curl -L https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/uninstall-crit | sh
+```
+
+## System Requirements
+
+Supported host environments:
+
+* FreeBSD (x86_64)
+* macOS (aarch64 / x86_64)
+* NetBSD (x86_64)
+* Linux (aarch64 / x86_64)
+* Illumos (x86_64)
+* Windows (aarch64 / x86_64) via [WSL](https://learn.microsoft.com/en-us/windows/wsl/)
+
+Prerequisites:
+
+* [curl](https://curl.se/)
 
 # INSTALL (PRECOMPILED BINARIES)
 
@@ -48,15 +83,3 @@ docker pull n4jm4/crit
 ## System Requirements
 
 * [Docker in Docker](https://www.docker.com/resources/docker-in-docker-containerized-ci-workflows-dockercon-2023/)
-
-# INSTALL (COMPILE FROM SOURCE)
-
-```sh
-cargo install --force --path .
-```
-
-## System Requirements
-
-* [cargo](https://doc.rust-lang.org/cargo/)
-
-For more details on developing crit itself, see [DEVELOPMENT.md](DEVELOPMENT.md).
