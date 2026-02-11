@@ -13,7 +13,7 @@ _/ ___\_  __ \  \   __\
 
 # SUMMARY
 
-`crit` compiles Rust application ports for many different target platforms. This effort is based on conventional Rust tooling, including `cross`, `cargo`, and the amazing `rustc` compiler.
+`crit` automates crosscompiling Rust applications for many different kinds of target platforms.
 
 # EXAMPLE
 
