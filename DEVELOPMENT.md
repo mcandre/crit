@@ -69,18 +69,6 @@ make port
 make publish
 ```
 
-# TEST DOCKER IMAGES
-
-```sh
-make docker-test
-```
-
-# PUSH DOCKER IMAGES
-
-```sh
-make docker-push
-```
-
 # CLEAN
 
 ```sh

@@ -60,7 +60,7 @@ cargo install --force cross --git https://github.com/cross-rs/cross --rev 4e6436
 * a host capable of running musl/Linux containers (e.g. a GNU/Linux, musl/Linux, macOS, or Windows host)
 * a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))
 * [Docker First Aid Kit](https://github.com/mcandre/docker-first-aid-kit)
-* 200 GB of disk space allocated to Docker
+* ~100 GB of disk space allocated to Docker, depending on the breadth of target platforms involved
 * Apply `DOCKER_DEFAULT_PLATFORM` = `linux/amd64` environment variable
 * [cargo-cache](https://crates.io/crates/cargo-cache)
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
