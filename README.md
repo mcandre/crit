@@ -1,6 +1,6 @@
 # crit: Rust cross-compiler
 
-[![Crates.io Downloads (recent)](https://img.shields.io/crates/dr/crit?label=crate%20downloads)](https://crates.io/crates/crit) [![Docker Pulls](https://img.shields.io/docker/pulls/n4jm4/crit)](https://hub.docker.com/r/n4jm4/crit) [![GitHub Downloads](https://img.shields.io/github/downloads/mcandre/crit/total?logo=github)](https://github.com/mcandre/crit/releases) [![Test](https://github.com/mcandre/crit/actions/workflows/test.yml/badge.svg)](https://github.com/mcandre/crit/actions/workflows/test.yml) [![license](https://img.shields.io/badge/license-BSD-3)](LICENSE.md) [![Donate](https://img.shields.io/badge/GUMROAD-36a9ae?style=flat&logo=gumroad&logoColor=white)](https://mcandre.gumroad.com/)
+[![Crates.io Downloads (recent)](https://img.shields.io/crates/dr/crit?label=crate%20downloads)](https://crates.io/crates/crit) [![Docker Pulls](https://img.shields.io/docker/pulls/n4jm4/crit)](https://hub.docker.com/r/n4jm4/crit) [![GitHub Downloads](https://img.shields.io/github/downloads/mcandre/crit/total?logo=github)](https://github.com/mcandre/crit/releases) [![Test](https://github.com/mcandre/crit/actions/workflows/test.yml/badge.svg)](https://github.com/mcandre/crit/actions/workflows/test.yml) [![license](https://img.shields.io/badge/license-BSD-3)](LICENSE.md) [![Donate](https://img.shields.io/badge/-any?logo=gumroad&label=Donate&color=grey)](https://mcandre.gumroad.com/)
 
 ```text
              .__  __
