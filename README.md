@@ -31,36 +31,62 @@ aarch64-unknown-linux-gnu
 
 See `crit -h` for more options.
 
-# INSTALLATION
+# DOWNLOAD
 
-See [INSTALL.md](INSTALL.md).
+## Install
+
+```sh
+curl -L https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/install-crit | sh
+```
+
+## Postinstall
+
+Ensure `$HOME/.local/bin` is registered with your shell's `PATH` environment variable.
+
+## Uninstall
+
+```sh
+curl -L https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/uninstall-crit | sh
+```
+
+## System Requirements
+
+A 64-bit host platform:
+
+* FreeBSD (x86_64)
+* macOS (aarch64 / x86_64)
+* NetBSD (x86_64)
+* Linux (aarch64 / x86_64)
+* Illumos (x86_64)
+* Windows (aarch64 / x86_64) via [WSL](https://learn.microsoft.com/en-us/windows/wsl/)
+
+Prerequisites:
+
+* [curl](https://curl.se/)
+
+For more installation methods, see our [install guide](INSTALL.md).
 
 # RUNTIME REQUIREMENTS
 
-* [rustup](https://rustup.rs/) 1.28.1+
-* [Rust](https://www.rust-lang.org/en-US/)
-* [cross](https://crates.io/crates/cross) 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa
 * [Docker](https://www.docker.com/) 28.0.1+
+* [Rust](https://www.rust-lang.org/en-US/) 1.92.0+
+* [cross](https://github.com/cross-rs/cross) at ref `4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa`
+
+```sh
+cargo install --force cross --git https://github.com/cross-rs/cross --rev 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa
+```
 
 ## Recommended
 
 * a host capable of running musl/Linux containers (e.g. a GNU/Linux, musl/Linux, macOS, or Windows host)
 * a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))
 * [Docker First Aid Kit](https://github.com/mcandre/docker-first-aid-kit)
-* 256 GB of space allocated to Docker
+* 200 GB of disk space allocated to Docker
 * Apply `DOCKER_DEFAULT_PLATFORM` = `linux/amd64` environment variable
-* [ASDF](https://asdf-vm.com/) 0.18 (run `asdf reshim` after each Rust application binary installation)
 * [cargo-cache](https://crates.io/crates/cargo-cache)
-* [direnv](https://direnv.net/) 2
-* POSIX compliant [tar](https://pubs.opengroup.org/onlinepubs/7908799/xcu/tar.html)
-* [tinyrick](https://github.com/mcandre/tinyrick)
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
 * [GNU](https://www.gnu.org/) [time](https://en.wikipedia.org/wiki/Time_(Unix))
-* [Amphetamine](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12) (macOS), [The Caffeine](https://www.microsoft.com/store/productId/9PJBW5SCH9LC) (Windows), [Caffeine](https://launchpad.net/caffeine) (Linux) can prevent hibernation during any long builds
-
-**Warning**: Non-UNIX file systems may not preserve crucial chmod permissions during port generation. This can corrupt downstream artifacts, such as compressed archives and installation procedures.
-
-tar is a portable archiver suitable for creating `*.tgz` tarball archives. Users can then download the tarball and extract the executable relevant to their platform. Tarballs are especially well suited for use in Docker containers, as the tar command is more likely to be installed than unzip.
+* [Amphetamine](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12) (macOS), [The Caffeine](https://www.microsoft.com/store/productId/9PJBW5SCH9LC) (Windows), [Caffeine](https://launchpad.net/caffeine) (Linux) can prevent hibernation during long builds
 
 # CONFIGURATION
 
