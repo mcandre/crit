@@ -19,11 +19,8 @@ For advanced operations, such as linting and generating install media artifacts,
 
 ## Recommended
 
-* a host capable of running musl/Linux containers (e.g. a GNU/Linux, musl/Linux, macOS, or Windows host)
-* [Docker First Aid Kit](https://github.com/mcandre/docker-first-aid-kit)
-* Apply `DOCKER_DEFAULT_PLATFORM` = `linux/amd64` environment variable
+* Apple Silicon macOS users may want to apply `DOCKER_DEFAULT_PLATFORM=linux/amd64`, in order to account for images commonly lacking `linux/arm64` buildx platforms
 * [ASDF](https://asdf-vm.com/) 0.18 (run `asdf reshim` after provisioning)
-* [direnv](https://direnv.net/) 2
 * [GNU time](https://www.gnu.org/software/time/)
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
 

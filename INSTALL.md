@@ -24,14 +24,18 @@ curl -L https://raw.githubusercontent.com/mcandre/crit/refs/heads/main/uninstall
 
 ## System Requirements
 
-Supported host environments:
+### Bitness
 
-* FreeBSD (x86_64)
-* macOS (aarch64 / x86_64)
-* NetBSD (x86_64)
-* Linux (aarch64 / x86_64)
-* Illumos (x86_64)
-* Windows (aarch64 / x86_64) via [WSL](https://learn.microsoft.com/en-us/windows/wsl/)
+64
+
+### Hosts
+
+* FreeBSD (Intel)
+* macOS (ARM, Intel)
+* NetBSD (Intel)
+* Linux (ARM, Intel)
+* Illumos (Intel)
+* WSL (ARM, Intel)
 
 Prerequisites:
 
@@ -64,11 +68,30 @@ Remove the application executables from the selected directory.
 
 ## System Requirements
 
-Supported host environments:
+### Bitness
 
-* FreeBSD (x86_64)
-* macOS (aarch64 / x86_64)
-* NetBSD (x86_64)
-* Linux (aarch64 / x86_64)
-* Illumos (x86_64)
-* Windows (aarch64 / x86_64) native or [WSL](https://learn.microsoft.com/en-us/windows/wsl/)
+64
+
+### Hosts
+
+* FreeBSD (Intel)
+* macOS (ARM, Intel)
+* NetBSD (Intel)
+* Linux (ARM, Intel)
+* Illumos (Intel)
+* Windows (ARM, Intel)
+
+# INSTALL (COMPILE FROM SOURCE)
+
+```sh
+git clone https://github.com/mcandre/crit.git
+cd crit
+cargo install --force --path .
+```
+
+## Prerequisites
+
+* [cargo](https://doc.rust-lang.org/cargo/)
+* [git](https://git-scm.com/)
+
+For more details on developing crit itself, see our [development guide](DEVELOPMENT.md).

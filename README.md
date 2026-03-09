@@ -43,8 +43,6 @@ cargo install crit
 
 For more installation methods, see our [install guide](INSTALL.md).
 
-For more details on developing crit itself, see our [development guide](DEVELOPMENT.md).
-
 # RUNTIME REQUIREMENTS
 
 * [Docker](https://www.docker.com/) 28.0.1+
@@ -57,11 +55,8 @@ cargo install --force cross --git https://github.com/cross-rs/cross --rev 4e6436
 
 ## Recommended
 
-* a host capable of running musl/Linux containers (e.g. a GNU/Linux, musl/Linux, macOS, or Windows host)
 * a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))
-* [Docker First Aid Kit](https://github.com/mcandre/docker-first-aid-kit)
-* ~100 GB of disk space allocated to Docker, depending on the breadth of target platforms involved
-* Apply `DOCKER_DEFAULT_PLATFORM` = `linux/amd64` environment variable
+* Apple Silicon macOS users may want to apply `DOCKER_DEFAULT_PLATFORM=linux/amd64`, in order to account for images commonly lacking `linux/arm64` buildx platforms
 * [cargo-cache](https://crates.io/crates/cargo-cache)
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
 * [GNU](https://www.gnu.org/) [time](https://en.wikipedia.org/wiki/Time_(Unix))
