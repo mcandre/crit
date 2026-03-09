@@ -9,19 +9,18 @@ For advanced operations, such as linting and generating install media artifacts,
 * a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))
 * [bash](https://www.gnu.org/software/bash/) 4+
 * [cross](https://crates.io/crates/cross) 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa
-* [Docker](https://www.docker.com/) 28.0.1+
+* [Docker](https://www.docker.com/)
 * POSIX compliant [findutils](https://pubs.opengroup.org/onlinepubs/9799919799/utilities/find.html)
 * POSIX compliant [make](https://pubs.opengroup.org/onlinepubs/9799919799/utilities/make.html)
-* [rustup](https://rustup.rs/) 1.28.1+
 * [Rust](https://www.rust-lang.org/en-US/)
-* [GNU tar](https://www.gnu.org/software/tar/)
+* GNU [tar](https://www.gnu.org/software/tar/) as `gtar`
 * Provision additional dev tools with `make -f install.mk`
 
 ## Recommended
 
 * Apple Silicon macOS users may want to apply `DOCKER_DEFAULT_PLATFORM=linux/amd64`, in order to account for images commonly lacking `linux/arm64` buildx platforms
 * [ASDF](https://asdf-vm.com/) 0.18 (run `asdf reshim` after provisioning)
-* [GNU time](https://www.gnu.org/software/time/)
+* GNU [time](https://www.gnu.org/software/time/)
 * [tree](https://en.wikipedia.org/wiki/Tree_(command))
 
 # INSTALL BINARIES FROM SOURCE

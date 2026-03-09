@@ -37,16 +37,10 @@ See `crit -h` for more options.
 cargo install crit
 ```
 
-## System Requirements
+# PREREQUISITES
 
 * [cargo](https://doc.rust-lang.org/cargo/)
-
-For more installation methods, see our [install guide](INSTALL.md).
-
-# RUNTIME REQUIREMENTS
-
-* [Docker](https://www.docker.com/) 28.0.1+
-* [Rust](https://www.rust-lang.org/en-US/) 1.92.0+
+* [Docker](https://www.docker.com/)
 * [cross](https://github.com/cross-rs/cross) at ref `4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa`
 
 ```sh
@@ -57,14 +51,15 @@ cargo install --force cross --git https://github.com/cross-rs/cross --rev 4e6436
 
 * a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))
 * Apple Silicon macOS users may want to apply `DOCKER_DEFAULT_PLATFORM=linux/amd64`, in order to account for images commonly lacking `linux/arm64` buildx platforms
-* [cargo-cache](https://crates.io/crates/cargo-cache)
-* [tree](https://en.wikipedia.org/wiki/Tree_(command))
-* [GNU](https://www.gnu.org/) [time](https://en.wikipedia.org/wiki/Time_(Unix))
 * [Amphetamine](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12) (macOS), [The Caffeine](https://www.microsoft.com/store/productId/9PJBW5SCH9LC) (Windows), [Caffeine](https://launchpad.net/caffeine) (Linux) can prevent hibernation during long builds
+* GNU [time](https://en.wikipedia.org/wiki/Time_(Unix))
+* [tree](https://en.wikipedia.org/wiki/Tree_(command))
+
+For more installation methods, see our [install guide](INSTALL.md).
 
 # CONFIGURATION
 
-See [CONFIGURATION.md](CONFIGURATION.md).
+For information on configuring crit, see our [configuration guide](CONFIGURATION.md).
 
 # FAQ
 
