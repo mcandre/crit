@@ -6,9 +6,10 @@
 	build \
 	cargo-check \
 	clean \
-	clean-archive \
 	clean-cargo \
+	clean-crit \
 	clean-example \
+	clean-packages \
 	clean-ports \
 	clippy \
 	crit \
@@ -22,9 +23,10 @@
 	uninstall
 .IGNORE: \
 	clean \
-	clean-archive \
 	clean-cargo \
+	clean-crit \
 	clean-example \
+	clean-packages \
 	clean-ports
 
 VERSION=0.0.17
@@ -42,16 +44,17 @@ cargo-check:
 	cargo check
 
 clean: \
-	clean-archive \
 	clean-cargo \
+	clean-crit \
 	clean-example \
+	clean-packages \
 	clean-ports
-
-clean-archive:
-	rm .crit/bin/$(BANNER).tgz
 
 clean-cargo:
 	cargo clean
+
+clean-crit:
+	crit -c
 
 clean-example:
 	rm -f example/Cargo.lock
@@ -59,7 +62,7 @@ clean-example:
 	rm -rf example/.crit
 
 clean-ports:
-	crit -c
+	rm -rf .crit/bin/crit-ports
 
 clippy:
 	cargo clippy
