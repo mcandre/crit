@@ -1,10 +1,12 @@
 //! [`IndexMap`] is a hash table where the iteration order of the key-value
 //! pairs is independent of the hash values of the keys.
 
-mod core;
+mod entry;
 mod iter;
 mod mutable;
 mod slice;
+
+pub mod raw_entry_v1;
 
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
@@ -13,31 +15,33 @@ pub mod serde_seq;
 #[cfg(test)]
 mod tests;
 
-pub use self::core::raw_entry_v1::{self, RawEntryApiV1};
-pub use self::core::{Entry, IndexedEntry, OccupiedEntry, VacantEntry};
+pub use self::entry::{Entry, IndexedEntry};
+pub use crate::inner::{OccupiedEntry, VacantEntry};
+
 pub use self::iter::{
     Drain, ExtractIf, IntoIter, IntoKeys, IntoValues, Iter, IterMut, IterMut2, Keys, Splice,
     Values, ValuesMut,
 };
 pub use self::mutable::MutableEntryKey;
 pub use self::mutable::MutableKeys;
+pub use self::raw_entry_v1::RawEntryApiV1;
 pub use self::slice::Slice;
 
 #[cfg(feature = "rayon")]
 pub use crate::rayon::map as rayon;
 
-use ::core::cmp::Ordering;
-use ::core::fmt;
-use ::core::hash::{BuildHasher, Hash, Hasher};
-use ::core::mem;
-use ::core::ops::{Index, IndexMut, RangeBounds};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+use core::cmp::Ordering;
+use core::fmt;
+use core::hash::{BuildHasher, Hash};
+use core::mem;
+use core::ops::{Index, IndexMut, RangeBounds};
 
 #[cfg(feature = "std")]
-use std::collections::hash_map::RandomState;
+use std::hash::RandomState;
 
-pub(crate) use self::core::{ExtractCore, IndexMapCore};
+use crate::inner::Core;
 use crate::util::{third, try_simplify_range};
 use crate::{Bucket, Equivalent, GetDisjointMutError, HashValue, TryReserveError};
 
@@ -86,12 +90,12 @@ use crate::{Bucket, Equivalent, GetDisjointMutError, HashValue, TryReserveError}
 /// ```
 #[cfg(feature = "std")]
 pub struct IndexMap<K, V, S = RandomState> {
-    pub(crate) core: IndexMapCore<K, V>,
+    pub(crate) core: Core<K, V>,
     hash_builder: S,
 }
 #[cfg(not(feature = "std"))]
 pub struct IndexMap<K, V, S> {
-    pub(crate) core: IndexMapCore<K, V>,
+    pub(crate) core: Core<K, V>,
     hash_builder: S,
 }
 
@@ -126,7 +130,7 @@ where
 
     #[cfg(feature = "test_debug")]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Let the inner `IndexMapCore` print all of its details
+        // Let the inner `Core` print all of its details
         f.debug_struct("IndexMap")
             .field("core", &self.core)
             .finish()
@@ -163,7 +167,7 @@ impl<K, V, S> IndexMap<K, V, S> {
             Self::with_hasher(hash_builder)
         } else {
             IndexMap {
-                core: IndexMapCore::with_capacity(n),
+                core: Core::with_capacity(n),
                 hash_builder,
             }
         }
@@ -175,7 +179,7 @@ impl<K, V, S> IndexMap<K, V, S> {
     /// can be called in `static` contexts.
     pub const fn with_hasher(hash_builder: S) -> Self {
         IndexMap {
-            core: IndexMapCore::new(),
+            core: Core::new(),
             hash_builder,
         }
     }
@@ -736,7 +740,7 @@ where
     /// Computes in **O(1)** time (amortized average).
     pub fn entry(&mut self, key: K) -> Entry<'_, K, V> {
         let hash = self.hash(&key);
-        self.core.entry(hash, key)
+        Entry::new(&mut self.core, hash, key)
     }
 
     /// Creates a splicing iterator that replaces the specified range in the map
@@ -813,9 +817,8 @@ where
     S: BuildHasher,
 {
     pub(crate) fn hash<Q: ?Sized + Hash>(&self, key: &Q) -> HashValue {
-        let mut h = self.hash_builder.build_hasher();
-        key.hash(&mut h);
-        HashValue(h.finish() as usize)
+        let h = self.hash_builder.hash_one(key);
+        HashValue(h as usize)
     }
 
     /// Return `true` if an equivalent to `key` exists in the map.
@@ -1136,6 +1139,36 @@ impl<K, V, S> IndexMap<K, V, S> {
         self.core.pop()
     }
 
+    /// Removes and returns the last key-value pair from a map if the predicate
+    /// returns `true`, or [`None`] if the predicate returns false or the map
+    /// is empty (the predicate will not be called in that case).
+    ///
+    /// This preserves the order of the remaining elements.
+    ///
+    /// Computes in **O(1)** time (average).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use indexmap::IndexMap;
+    ///
+    /// let init = [(1, 'a'), (2, 'b'), (3, 'c'), (4, 'd')];
+    /// let mut map = IndexMap::from(init);
+    /// let pred = |key: &i32, _value: &mut char| *key % 2 == 0;
+    ///
+    /// assert_eq!(map.pop_if(pred), Some((4, 'd')));
+    /// assert_eq!(map.as_slice(), &init[..3]);
+    /// assert_eq!(map.pop_if(pred), None);
+    /// ```
+    pub fn pop_if(&mut self, predicate: impl FnOnce(&K, &mut V) -> bool) -> Option<(K, V)> {
+        let (last_key, last_value) = self.last_mut()?;
+        if predicate(last_key, last_value) {
+            self.core.pop()
+        } else {
+            None
+        }
+    }
+
     /// Scan through each key-value pair in the map and keep those where the
     /// closure `keep` returns `true`.
     ///
@@ -1423,10 +1456,7 @@ impl<K, V, S> IndexMap<K, V, S> {
     ///
     /// Computes in **O(1)** time.
     pub fn get_index_entry(&mut self, index: usize) -> Option<IndexedEntry<'_, K, V>> {
-        if index >= self.len() {
-            return None;
-        }
-        Some(IndexedEntry::new(&mut self.core, index))
+        IndexedEntry::new(&mut self.core, index)
     }
 
     /// Get an array of `N` key-value pairs by `N` indices
@@ -1796,10 +1826,11 @@ where
         // Otherwise reserve half the hint (rounded up), so the map
         // will only resize twice in the worst case.
         let iter = iterable.into_iter();
+        let (lower_len, _) = iter.size_hint();
         let reserve = if self.is_empty() {
-            iter.size_hint().0
+            lower_len
         } else {
-            (iter.size_hint().0 + 1) / 2
+            lower_len.div_ceil(2)
         };
         self.reserve(reserve);
         iter.for_each(move |(k, v)| {

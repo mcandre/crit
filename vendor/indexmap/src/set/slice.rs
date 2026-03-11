@@ -85,10 +85,19 @@ impl<T> Slice<T> {
     /// Divides one slice into two at an index.
     ///
     /// ***Panics*** if `index > len`.
+    /// For a non-panicking alternative see [`split_at_checked`][Self::split_at_checked].
     #[track_caller]
     pub fn split_at(&self, index: usize) -> (&Self, &Self) {
         let (first, second) = self.entries.split_at(index);
         (Self::from_slice(first), Self::from_slice(second))
+    }
+
+    /// Divides one slice into two at an index.
+    ///
+    /// Returns `None` if `index > len`.
+    pub fn split_at_checked(&self, index: usize) -> Option<(&Self, &Self)> {
+        let (first, second) = self.entries.split_at_checked(index)?;
+        Some((Self::from_slice(first), Self::from_slice(second)))
     }
 
     /// Returns the first value and the rest of the slice,
@@ -166,8 +175,7 @@ impl<T> Slice<T> {
     where
         T: PartialOrd,
     {
-        // TODO(MSRV 1.82): self.entries.is_sorted_by(|a, b| a.key <= b.key)
-        self.is_sorted_by(T::le)
+        self.entries.is_sorted_by(|a, b| a.key <= b.key)
     }
 
     /// Checks if this slice is sorted using the given comparator function.
@@ -176,16 +184,7 @@ impl<T> Slice<T> {
     where
         F: FnMut(&'a T, &'a T) -> bool,
     {
-        // TODO(MSRV 1.82): self.entries.is_sorted_by(move |a, b| cmp(&a.key, &b.key))
-        let mut iter = self.entries.iter();
-        match iter.next() {
-            Some(mut prev) => iter.all(move |next| {
-                let sorted = cmp(&prev.key, &next.key);
-                prev = next;
-                sorted
-            }),
-            None => true,
-        }
+        self.entries.is_sorted_by(move |a, b| cmp(&a.key, &b.key))
     }
 
     /// Checks if this slice is sorted using the given sort-key function.
@@ -195,16 +194,7 @@ impl<T> Slice<T> {
         F: FnMut(&'a T) -> K,
         K: PartialOrd,
     {
-        // TODO(MSRV 1.82): self.entries.is_sorted_by_key(move |a| sort_key(&a.key))
-        let mut iter = self.entries.iter().map(move |a| sort_key(&a.key));
-        match iter.next() {
-            Some(mut prev) => iter.all(move |next| {
-                let sorted = prev <= next;
-                prev = next;
-                sorted
-            }),
-            None => true,
-        }
+        self.entries.is_sorted_by_key(move |a| sort_key(&a.key))
     }
 
     /// Returns the index of the partition point of a sorted set according to the given predicate

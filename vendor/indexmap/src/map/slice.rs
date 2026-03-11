@@ -27,7 +27,7 @@ pub struct Slice<K, V> {
 // and reference lifetimes are bound together in function signatures.
 #[allow(unsafe_code)]
 impl<K, V> Slice<K, V> {
-    pub(super) const fn from_slice(entries: &[Bucket<K, V>]) -> &Self {
+    pub(crate) const fn from_slice(entries: &[Bucket<K, V>]) -> &Self {
         unsafe { &*(entries as *const [Bucket<K, V>] as *const Self) }
     }
 
@@ -124,6 +124,7 @@ impl<K, V> Slice<K, V> {
     /// Divides one slice into two at an index.
     ///
     /// ***Panics*** if `index > len`.
+    /// For a non-panicking alternative see [`split_at_checked`][Self::split_at_checked].
     #[track_caller]
     pub fn split_at(&self, index: usize) -> (&Self, &Self) {
         let (first, second) = self.entries.split_at(index);
@@ -133,10 +134,27 @@ impl<K, V> Slice<K, V> {
     /// Divides one mutable slice into two at an index.
     ///
     /// ***Panics*** if `index > len`.
+    /// For a non-panicking alternative see [`split_at_mut_checked`][Self::split_at_mut_checked].
     #[track_caller]
     pub fn split_at_mut(&mut self, index: usize) -> (&mut Self, &mut Self) {
         let (first, second) = self.entries.split_at_mut(index);
         (Self::from_mut_slice(first), Self::from_mut_slice(second))
+    }
+
+    /// Divides one slice into two at an index.
+    ///
+    /// Returns `None` if `index > len`.
+    pub fn split_at_checked(&self, index: usize) -> Option<(&Self, &Self)> {
+        let (first, second) = self.entries.split_at_checked(index)?;
+        Some((Self::from_slice(first), Self::from_slice(second)))
+    }
+
+    /// Divides one mutable slice into two at an index.
+    ///
+    /// Returns `None` if `index > len`.
+    pub fn split_at_mut_checked(&mut self, index: usize) -> Option<(&mut Self, &mut Self)> {
+        let (first, second) = self.entries.split_at_mut_checked(index)?;
+        Some((Self::from_mut_slice(first), Self::from_mut_slice(second)))
     }
 
     /// Returns the first key-value pair and the rest of the slice,
@@ -264,8 +282,7 @@ impl<K, V> Slice<K, V> {
     where
         K: PartialOrd,
     {
-        // TODO(MSRV 1.82): self.entries.is_sorted_by(|a, b| a.key <= b.key)
-        self.is_sorted_by_key(|k, _| k)
+        self.entries.is_sorted_by(|a, b| a.key <= b.key)
     }
 
     /// Checks if this slice is sorted using the given comparator function.
@@ -274,17 +291,8 @@ impl<K, V> Slice<K, V> {
     where
         F: FnMut(&'a K, &'a V, &'a K, &'a V) -> bool,
     {
-        // TODO(MSRV 1.82): self.entries
-        //     .is_sorted_by(move |a, b| cmp(&a.key, &a.value, &b.key, &b.value))
-        let mut iter = self.entries.iter();
-        match iter.next() {
-            Some(mut prev) => iter.all(move |next| {
-                let sorted = cmp(&prev.key, &prev.value, &next.key, &next.value);
-                prev = next;
-                sorted
-            }),
-            None => true,
-        }
+        self.entries
+            .is_sorted_by(move |a, b| cmp(&a.key, &a.value, &b.key, &b.value))
     }
 
     /// Checks if this slice is sorted using the given sort-key function.
@@ -294,17 +302,8 @@ impl<K, V> Slice<K, V> {
         F: FnMut(&'a K, &'a V) -> T,
         T: PartialOrd,
     {
-        // TODO(MSRV 1.82): self.entries
-        //     .is_sorted_by_key(move |a| sort_key(&a.key, &a.value))
-        let mut iter = self.entries.iter().map(move |a| sort_key(&a.key, &a.value));
-        match iter.next() {
-            Some(mut prev) => iter.all(move |next| {
-                let sorted = prev <= next;
-                prev = next;
-                sorted
-            }),
-            None => true,
-        }
+        self.entries
+            .is_sorted_by_key(move |a| sort_key(&a.key, &a.value))
     }
 
     /// Returns the index of the partition point of a sorted map according to the given predicate

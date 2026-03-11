@@ -1,5 +1,23 @@
 # Releases
 
+## 2.13.0 (2026-01-07)
+
+- Implemented `Clone` for `IntoKeys` and `IntoValues`.
+- Added `map::Slice::split_at_checked` and `split_at_mut_checked`.
+- Added `set::Slice::split_at_checked`.
+
+## 2.12.1 (2025-11-20)
+
+- Simplified a lot of internals using `hashbrown`'s new bucket API.
+
+## 2.12.0 (2025-10-17)
+
+- **MSRV**: Rust 1.82.0 or later is now required.
+- Updated the `hashbrown` dependency to 0.16 alone.
+- Error types now implement `core::error::Error`.
+- Added `pop_if` methods to `IndexMap` and `IndexSet`, similar to the
+  method for `Vec` added in Rust 1.86.
+
 ## 2.11.4 (2025-09-18)
 
 - Updated the `hashbrown` dependency to a range allowing 0.15 or 0.16.

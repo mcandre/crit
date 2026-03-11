@@ -20,7 +20,7 @@ extern crate rustc_driver;
 extern crate rustc_error_messages;
 extern crate rustc_errors;
 extern crate rustc_expand;
-extern crate rustc_parse as parse;
+extern crate rustc_parse;
 extern crate rustc_session;
 extern crate rustc_span;
 
@@ -32,8 +32,9 @@ use rustc_ast::ast::{
 use rustc_ast::mut_visit::{self, MutVisitor};
 use rustc_ast_pretty::pprust;
 use rustc_data_structures::flat_map_in_place::FlatMapInPlace;
-use rustc_error_messages::{DiagMessage, LazyFallbackBundle};
-use rustc_errors::{translation, Diag, PResult};
+use rustc_error_messages::DiagMessage;
+use rustc_errors::{Diag, PResult};
+use rustc_parse::lexer::StripTokens;
 use rustc_session::parse::ParseSess;
 use rustc_span::FileName;
 use std::borrow::Cow;
@@ -102,8 +103,7 @@ fn test(path: &Path, failed: &AtomicUsize, abort_after: usize) {
 
     rustc_span::create_session_if_not_set_then(edition, |_| {
         let equal = match panic::catch_unwind(|| {
-            let locale_resources = rustc_driver::DEFAULT_LOCALE_RESOURCES.to_vec();
-            let sess = ParseSess::new(locale_resources);
+            let sess = ParseSess::new();
             let before = match librustc_parse(content, &sess) {
                 Ok(before) => before,
                 Err(diagnostic) => {
@@ -162,44 +162,20 @@ fn librustc_parse(content: String, sess: &ParseSess) -> PResult<Crate> {
     static COUNTER: AtomicUsize = AtomicUsize::new(0);
     let counter = COUNTER.fetch_add(1, Ordering::Relaxed);
     let name = FileName::Custom(format!("test_round_trip{}", counter));
-    let mut parser = parse::new_parser_from_source_str(sess, name, content).unwrap();
+    let mut parser = rustc_parse::new_parser_from_source_str(
+        sess,
+        name,
+        content,
+        StripTokens::ShebangAndFrontmatter,
+    )
+    .unwrap();
     parser.parse_crate_mod()
 }
 
 fn translate_message(diagnostic: &Diag) -> Cow<'static, str> {
-    thread_local! {
-        static FLUENT_BUNDLE: LazyFallbackBundle = {
-            let locale_resources = rustc_driver::DEFAULT_LOCALE_RESOURCES.to_vec();
-            let with_directionality_markers = false;
-            rustc_error_messages::fallback_fluent_bundle(locale_resources, with_directionality_markers)
-        };
+    match &diagnostic.messages[0].0 {
+        DiagMessage::Str(msg) | DiagMessage::Inline(msg) => msg.clone(),
     }
-
-    let message = &diagnostic.messages[0].0;
-    let args = translation::to_fluent_args(diagnostic.args.iter());
-
-    let (identifier, attr) = match message {
-        DiagMessage::Str(msg) | DiagMessage::Translated(msg) => return msg.clone(),
-        DiagMessage::FluentIdentifier(identifier, attr) => (identifier, attr),
-    };
-
-    FLUENT_BUNDLE.with(|fluent_bundle| {
-        let message = fluent_bundle
-            .get_message(identifier)
-            .expect("missing diagnostic in fluent bundle");
-        let value = match attr {
-            Some(attr) => message
-                .get_attribute(attr)
-                .expect("missing attribute in fluent message")
-                .value(),
-            None => message.value().expect("missing value in fluent message"),
-        };
-
-        let mut err = Vec::new();
-        let translated = fluent_bundle.format_pattern(value, Some(&args), &mut err);
-        assert!(err.is_empty());
-        Cow::Owned(translated.into_owned())
-    })
 }
 
 fn normalize(krate: &mut Crate) {
