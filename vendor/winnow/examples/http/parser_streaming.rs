@@ -3,12 +3,12 @@ use winnow::{
     ascii::line_ending, combinator::repeat, prelude::*, stream::Partial, token::take_while,
 };
 
-pub type Stream<'i> = Partial<&'i [u8]>;
+pub(crate) type Stream<'i> = Partial<&'i [u8]>;
 
 #[rustfmt::skip]
 #[derive(Debug)]
 #[allow(dead_code)]
-pub struct Request<'a> {
+pub(crate) struct Request<'a> {
   method:  &'a [u8],
   uri:     &'a [u8],
   version: &'a [u8],
@@ -16,12 +16,12 @@ pub struct Request<'a> {
 
 #[derive(Debug)]
 #[allow(dead_code)]
-pub struct Header<'a> {
+pub(crate) struct Header<'a> {
     name: &'a [u8],
     value: Vec<&'a [u8]>,
 }
 
-pub fn parse(data: &[u8]) -> Option<Vec<(Request<'_>, Vec<Header<'_>>)>> {
+pub(crate) fn parse(data: &[u8]) -> Option<Vec<(Request<'_>, Vec<Header<'_>>)>> {
     let mut buf = Partial::new(data);
     let mut v = Vec::new();
     loop {
@@ -35,7 +35,7 @@ pub fn parse(data: &[u8]) -> Option<Vec<(Request<'_>, Vec<Header<'_>>)>> {
                 }
             }
             Err(e) => {
-                println!("error: {:?}", e);
+                println!("error: {e:?}");
                 return None;
             }
         }
@@ -44,7 +44,7 @@ pub fn parse(data: &[u8]) -> Option<Vec<(Request<'_>, Vec<Header<'_>>)>> {
     Some(v)
 }
 
-fn request<'s>(input: &mut Stream<'s>) -> PResult<(Request<'s>, Vec<Header<'s>>)> {
+fn request<'s>(input: &mut Stream<'s>) -> ModalResult<(Request<'s>, Vec<Header<'s>>)> {
     let req = request_line(input)?;
     let h = repeat(1.., message_header).parse_next(input)?;
     let _ = line_ending.parse_next(input)?;
@@ -52,7 +52,7 @@ fn request<'s>(input: &mut Stream<'s>) -> PResult<(Request<'s>, Vec<Header<'s>>)
     Ok((req, h))
 }
 
-fn request_line<'s>(input: &mut Stream<'s>) -> PResult<Request<'s>> {
+fn request_line<'s>(input: &mut Stream<'s>) -> ModalResult<Request<'s>> {
     seq!( Request {
         method: take_while(1.., is_token),
         _: take_while(1.., is_space),
@@ -64,14 +64,14 @@ fn request_line<'s>(input: &mut Stream<'s>) -> PResult<Request<'s>> {
     .parse_next(input)
 }
 
-fn http_version<'s>(input: &mut Stream<'s>) -> PResult<&'s [u8]> {
+fn http_version<'s>(input: &mut Stream<'s>) -> ModalResult<&'s [u8]> {
     let _ = "HTTP/".parse_next(input)?;
     let version = take_while(1.., is_version).parse_next(input)?;
 
     Ok(version)
 }
 
-fn message_header_value<'s>(input: &mut Stream<'s>) -> PResult<&'s [u8]> {
+fn message_header_value<'s>(input: &mut Stream<'s>) -> ModalResult<&'s [u8]> {
     let _ = take_while(1.., is_horizontal_space).parse_next(input)?;
     let data = take_while(1.., till_line_ending).parse_next(input)?;
     let _ = line_ending.parse_next(input)?;
@@ -79,7 +79,7 @@ fn message_header_value<'s>(input: &mut Stream<'s>) -> PResult<&'s [u8]> {
     Ok(data)
 }
 
-fn message_header<'s>(input: &mut Stream<'s>) -> PResult<Header<'s>> {
+fn message_header<'s>(input: &mut Stream<'s>) -> ModalResult<Header<'s>> {
     seq!(Header {
         name: take_while(1.., is_token),
         _: ':',

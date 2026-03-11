@@ -5,23 +5,23 @@ use winnow::prelude::*;
 use winnow::{
     ascii::float,
     combinator::alt,
-    combinator::{cut_err, rest},
+    combinator::cut_err,
     combinator::{delimited, preceded, separated_pair, terminated},
     combinator::{repeat, separated},
-    error::{AddContext, ParserError},
+    error::{AddContext, ParserError, StrContext},
     stream::Partial,
-    token::{any, none_of, take, take_while},
+    token::{any, none_of, rest, take, take_while},
 };
 
 use crate::json::JsonValue;
 
-pub type Stream<'i> = Partial<&'i str>;
+pub(crate) type Stream<'i> = Partial<&'i str>;
 
 /// The root element of a JSON parser is any value
 ///
 /// A parser has the following signature:
-/// `&mut Stream -> PResult<Output, InputError>`, with `PResult` defined as:
-/// `type PResult<O, E = ErrorKind> = Result<O, ErrMode<E>>;`
+/// `&mut Stream -> ModalResult<Output, ContextError>`, with `ModalResult` defined as:
+/// `type ModalResult<O, E = ErrorKind> = Result<O, ErrMode<E>>;`
 ///
 /// most of the times you can ignore the error type and use the default (but this
 /// examples shows custom error types later on!)
@@ -29,17 +29,17 @@ pub type Stream<'i> = Partial<&'i str>;
 /// Here we use `&str` as input type, but parsers can be generic over
 /// the input type, work directly with `&[u8]`, or any other type that
 /// implements the required traits.
-pub fn json<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, &'static str>>(
+pub(crate) fn json<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, StrContext>>(
     input: &mut Stream<'i>,
-) -> PResult<JsonValue, E> {
+) -> ModalResult<JsonValue, E> {
     delimited(ws, json_value, ws_or_eof).parse_next(input)
 }
 
 /// `alt` is a combinator that tries multiple parsers one by one, until
 /// one of them succeeds
-fn json_value<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, &'static str>>(
+fn json_value<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, StrContext>>(
     input: &mut Stream<'i>,
-) -> PResult<JsonValue, E> {
+) -> ModalResult<JsonValue, E> {
     // `alt` combines the each value parser. It returns the result of the first
     // successful parser, or an error
     alt((
@@ -53,10 +53,10 @@ fn json_value<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, &'static s
     .parse_next(input)
 }
 
-/// `tag(string)` generates a parser that recognizes the argument string.
+/// `literal(string)` generates a parser that takes the argument string.
 ///
 /// This also shows returning a sub-slice of the original input
-fn null<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> PResult<&'i str, E> {
+fn null<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> ModalResult<&'i str, E> {
     // This is a parser that returns `"null"` if it sees the string "null", and
     // an error otherwise
     "null".parse_next(input)
@@ -64,7 +64,7 @@ fn null<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> PResult<&'i s
 
 /// We can combine `tag` with other functions, like `value` which returns a given constant value on
 /// success.
-fn boolean<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> PResult<bool, E> {
+fn boolean<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> ModalResult<bool, E> {
     // This is a parser that returns `true` if it sees the string "true", and
     // an error otherwise
     let parse_true = "true".value(true);
@@ -76,11 +76,11 @@ fn boolean<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> PResult<bo
     alt((parse_true, parse_false)).parse_next(input)
 }
 
-/// This parser gathers all `char`s up into a `String`with a parse to recognize the double quote
+/// This parser gathers all `char`s up into a `String`with a parse to take the double quote
 /// character, before the string (using `preceded`) and after the string (using `terminated`).
-fn string<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, &'static str>>(
+fn string<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, StrContext>>(
     input: &mut Stream<'i>,
-) -> PResult<String, E> {
+) -> ModalResult<String, E> {
     preceded(
         '\"',
         // `cut_err` transforms an `ErrMode::Backtrack(e)` to `ErrMode::Cut(e)`, signaling to
@@ -97,13 +97,13 @@ fn string<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, &'static str>>
     )
     // `context` lets you add a static string to errors to provide more information in the
     // error chain (to indicate which parser had an error)
-    .context("string")
+    .context(StrContext::Expected("string".into()))
     .parse_next(input)
 }
 
 /// You can mix the above declarative parsing with an imperative style to handle more unique cases,
 /// like escaping
-fn character<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> PResult<char, E> {
+fn character<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> ModalResult<char, E> {
     let c = none_of('\"').parse_next(input)?;
     if c == '\\' {
         alt((
@@ -126,7 +126,7 @@ fn character<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> PResult<
     }
 }
 
-fn unicode_escape<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> PResult<char, E> {
+fn unicode_escape<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> ModalResult<char, E> {
     alt((
         // Not a surrogate
         u16_hex
@@ -148,7 +148,7 @@ fn unicode_escape<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> PRe
     .parse_next(input)
 }
 
-fn u16_hex<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> PResult<u16, E> {
+fn u16_hex<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> ModalResult<u16, E> {
     take(4usize)
         .verify_map(|s| u16::from_str_radix(s, 16).ok())
         .parse_next(input)
@@ -158,9 +158,9 @@ fn u16_hex<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> PResult<u1
 /// accumulating results in a `Vec`, until it encounters an error.
 /// If you want more control on the parser application, check out the `iterator`
 /// combinator (cf `examples/iterator.rs`)
-fn array<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, &'static str>>(
+fn array<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, StrContext>>(
     input: &mut Stream<'i>,
-) -> PResult<Vec<JsonValue>, E> {
+) -> ModalResult<Vec<JsonValue>, E> {
     preceded(
         ('[', ws),
         cut_err(terminated(
@@ -168,13 +168,13 @@ fn array<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, &'static str>>(
             (ws, ']'),
         )),
     )
-    .context("array")
+    .context(StrContext::Expected("array".into()))
     .parse_next(input)
 }
 
-fn object<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, &'static str>>(
+fn object<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, StrContext>>(
     input: &mut Stream<'i>,
-) -> PResult<HashMap<String, JsonValue>, E> {
+) -> ModalResult<HashMap<String, JsonValue>, E> {
     preceded(
         ('{', ws),
         cut_err(terminated(
@@ -182,26 +182,26 @@ fn object<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, &'static str>>
             (ws, '}'),
         )),
     )
-    .context("object")
+    .context(StrContext::Expected("object".into()))
     .parse_next(input)
 }
 
-fn key_value<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, &'static str>>(
+fn key_value<'i, E: ParserError<Stream<'i>> + AddContext<Stream<'i>, StrContext>>(
     input: &mut Stream<'i>,
-) -> PResult<(String, JsonValue), E> {
+) -> ModalResult<(String, JsonValue), E> {
     separated_pair(string, cut_err((ws, ':', ws)), json_value).parse_next(input)
 }
 
 /// Parser combinators are constructed from the bottom up:
 /// first we write parsers for the smallest elements (here a space character),
 /// then we'll combine them in larger parsers
-fn ws<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> PResult<&'i str, E> {
+fn ws<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> ModalResult<&'i str, E> {
     // Combinators like `take_while` return a function. That function is the
     // parser,to which we can pass the input
     take_while(0.., WS).parse_next(input)
 }
 
-fn ws_or_eof<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> PResult<&'i str, E> {
+fn ws_or_eof<'i, E: ParserError<Stream<'i>>>(input: &mut Stream<'i>) -> ModalResult<&'i str, E> {
     rest.verify(|s: &str| s.chars().all(|c| WS.contains(&c)))
         .parse_next(input)
 }
@@ -211,54 +211,50 @@ const WS: &[char] = &[' ', '\t', '\r', '\n'];
 #[cfg(test)]
 mod test {
     #[allow(clippy::useless_attribute)]
-    #[allow(dead_code)] // its dead for benches
+    #[allow(unused_imports)] // its dead for benches
     use super::*;
 
     #[allow(clippy::useless_attribute)]
     #[allow(dead_code)] // its dead for benches
-    type Error<'i> = winnow::error::InputError<Partial<&'i str>>;
+    type Error = winnow::error::ContextError;
 
     #[test]
     fn json_string() {
         assert_eq!(
-            string::<Error<'_>>.parse_peek(Partial::new("\"\"")),
-            Ok((Partial::new(""), "".to_string()))
+            string::<Error>.parse_peek(Partial::new("\"\"")),
+            Ok((Partial::new(""), "".to_owned()))
         );
         assert_eq!(
-            string::<Error<'_>>.parse_peek(Partial::new("\"abc\"")),
-            Ok((Partial::new(""), "abc".to_string()))
+            string::<Error>.parse_peek(Partial::new("\"abc\"")),
+            Ok((Partial::new(""), "abc".to_owned()))
         );
         assert_eq!(
-            string::<Error<'_>>.parse_peek(Partial::new(
+            string::<Error>.parse_peek(Partial::new(
                 "\"abc\\\"\\\\\\/\\b\\f\\n\\r\\t\\u0001\\u2014\u{2014}def\""
             )),
             Ok((
                 Partial::new(""),
-                "abc\"\\/\x08\x0C\n\r\t\x01——def".to_string()
+                "abc\"\\/\x08\x0C\n\r\t\x01——def".to_owned()
             )),
         );
         assert_eq!(
-            string::<Error<'_>>.parse_peek(Partial::new("\"\\uD83D\\uDE10\"")),
-            Ok((Partial::new(""), "😐".to_string()))
+            string::<Error>.parse_peek(Partial::new("\"\\uD83D\\uDE10\"")),
+            Ok((Partial::new(""), "😐".to_owned()))
         );
 
-        assert!(string::<Error<'_>>.parse_peek(Partial::new("\"")).is_err());
-        assert!(string::<Error<'_>>
-            .parse_peek(Partial::new("\"abc"))
-            .is_err());
-        assert!(string::<Error<'_>>
-            .parse_peek(Partial::new("\"\\\""))
-            .is_err());
-        assert!(string::<Error<'_>>
+        assert!(string::<Error>.parse_peek(Partial::new("\"")).is_err());
+        assert!(string::<Error>.parse_peek(Partial::new("\"abc")).is_err());
+        assert!(string::<Error>.parse_peek(Partial::new("\"\\\"")).is_err());
+        assert!(string::<Error>
             .parse_peek(Partial::new("\"\\u123\""))
             .is_err());
-        assert!(string::<Error<'_>>
+        assert!(string::<Error>
             .parse_peek(Partial::new("\"\\uD800\""))
             .is_err());
-        assert!(string::<Error<'_>>
+        assert!(string::<Error>
             .parse_peek(Partial::new("\"\\uD800\\uD800\""))
             .is_err());
-        assert!(string::<Error<'_>>
+        assert!(string::<Error>
             .parse_peek(Partial::new("\"\\uDC00\""))
             .is_err());
     }
@@ -271,15 +267,15 @@ mod test {
 
         let expected = Object(
             vec![
-                ("a".to_string(), Num(42.0)),
-                ("b".to_string(), Str("x".to_string())),
+                ("a".to_owned(), Num(42.0)),
+                ("b".to_owned(), Str("x".to_owned())),
             ]
             .into_iter()
             .collect(),
         );
 
         assert_eq!(
-            json::<Error<'_>>.parse_peek(Partial::new(input)),
+            json::<Error>.parse_peek(Partial::new(input)),
             Ok((Partial::new(""), expected))
         );
     }
@@ -290,10 +286,10 @@ mod test {
 
         let input = r#"[42,"x"]"#;
 
-        let expected = Array(vec![Num(42.0), Str("x".to_string())]);
+        let expected = Array(vec![Num(42.0), Str("x".to_owned())]);
 
         assert_eq!(
-            json::<Error<'_>>.parse_peek(Partial::new(input)),
+            json::<Error>.parse_peek(Partial::new(input)),
             Ok((Partial::new(""), expected))
         );
     }
@@ -317,33 +313,33 @@ mod test {
   "#;
 
         assert_eq!(
-            json::<Error<'_>>.parse_peek(Partial::new(input)),
+            json::<Error>.parse_peek(Partial::new(input)),
             Ok((
                 Partial::new(""),
                 Object(
                     vec![
-                        ("null".to_string(), Null),
-                        ("true".to_string(), Boolean(true)),
-                        ("false".to_string(), Boolean(false)),
-                        ("number".to_string(), Num(123e4)),
-                        ("string".to_string(), Str(" abc 123 ".to_string())),
+                        ("null".to_owned(), Null),
+                        ("true".to_owned(), Boolean(true)),
+                        ("false".to_owned(), Boolean(false)),
+                        ("number".to_owned(), Num(123e4)),
+                        ("string".to_owned(), Str(" abc 123 ".to_owned())),
                         (
-                            "array".to_string(),
-                            Array(vec![Boolean(false), Num(1.0), Str("two".to_string())])
+                            "array".to_owned(),
+                            Array(vec![Boolean(false), Num(1.0), Str("two".to_owned())])
                         ),
                         (
-                            "object".to_string(),
+                            "object".to_owned(),
                             Object(
                                 vec![
-                                    ("a".to_string(), Num(1.0)),
-                                    ("b".to_string(), Str("c".to_string())),
+                                    ("a".to_owned(), Num(1.0)),
+                                    ("b".to_owned(), Str("c".to_owned())),
                                 ]
                                 .into_iter()
                                 .collect()
                             )
                         ),
-                        ("empty_array".to_string(), Array(vec![]),),
-                        ("empty_object".to_string(), Object(HashMap::new()),),
+                        ("empty_array".to_owned(), Array(vec![]),),
+                        ("empty_object".to_owned(), Object(HashMap::new()),),
                     ]
                     .into_iter()
                     .collect()

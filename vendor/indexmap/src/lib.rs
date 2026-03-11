@@ -49,8 +49,8 @@
 //!
 //! [feature flags]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-features-section
 //! [`no_std`]: #no-standard-library-targets
-//! [`Serialize`]: `::serde::Serialize`
-//! [`Deserialize`]: `::serde::Deserialize`
+//! [`Serialize`]: `::serde_core::Serialize`
+//! [`Deserialize`]: `::serde_core::Deserialize`
 //! [`BorshSerialize`]: `::borsh::BorshSerialize`
 //! [`BorshDeserialize`]: `::borsh::BorshDeserialize`
 //! [`borsh`]: `::borsh`
@@ -108,8 +108,6 @@ extern crate alloc;
 #[macro_use]
 extern crate std;
 
-use alloc::vec::{self, Vec};
-
 mod arbitrary;
 #[macro_use]
 mod macros;
@@ -117,6 +115,8 @@ mod macros;
 mod borsh;
 #[cfg(feature = "serde")]
 mod serde;
+#[cfg(feature = "sval")]
+mod sval;
 mod util;
 
 pub mod map;
@@ -201,16 +201,6 @@ impl<K, V> Bucket<K, V> {
     fn muts(&mut self) -> (&mut K, &mut V) {
         (&mut self.key, &mut self.value)
     }
-}
-
-trait Entries {
-    type Entry;
-    fn into_entries(self) -> Vec<Self::Entry>;
-    fn as_entries(&self) -> &[Self::Entry];
-    fn as_entries_mut(&mut self) -> &mut [Self::Entry];
-    fn with_entries<F>(&mut self, f: F)
-    where
-        F: FnOnce(&mut [Self::Entry]);
 }
 
 /// The error type for [`try_reserve`][IndexMap::try_reserve] methods.

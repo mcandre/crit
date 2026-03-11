@@ -11,9 +11,10 @@
 
 [package]
 edition = "2021"
-rust-version = "1.64.0"
+rust-version = "1.65.0"
 name = "winnow"
-version = "0.5.40"
+version = "0.7.13"
+build = false
 include = [
     "build.rs",
     "src/**/*",
@@ -21,10 +22,13 @@ include = [
     "Cargo.lock",
     "LICENSE*",
     "README.md",
-    "benches/**/*",
     "examples/**/*",
 ]
+autolib = false
+autobins = false
 autoexamples = false
+autotests = false
+autobenches = false
 description = "A byte-oriented, zero-copy, parser combinators library"
 readme = "README.md"
 keywords = [
@@ -39,109 +43,139 @@ license = "MIT"
 repository = "https://github.com/winnow-rs/winnow"
 
 [package.metadata.docs.rs]
-cargo-args = [
-    "-Zunstable-options",
-    "-Zrustdoc-scrape-examples",
-]
 features = ["unstable-doc"]
 rustdoc-args = [
     "--cfg",
     "docsrs",
+    "--generate-link-to-definition",
 ]
 
 [[package.metadata.release.pre-release-replacements]]
 file = "CHANGELOG.md"
-min = 1
-replace = "{{version}}"
 search = "Unreleased"
-
-[[package.metadata.release.pre-release-replacements]]
-exactly = 1
-file = "CHANGELOG.md"
-replace = "...{{tag_name}}"
-search = '\.\.\.HEAD'
-
-[[package.metadata.release.pre-release-replacements]]
-file = "CHANGELOG.md"
+replace = "{{version}}"
 min = 1
-replace = "{{date}}"
-search = "ReleaseDate"
 
 [[package.metadata.release.pre-release-replacements]]
-exactly = 1
 file = "CHANGELOG.md"
+search = '\.\.\.HEAD'
+replace = "...{{tag_name}}"
+exactly = 1
+
+[[package.metadata.release.pre-release-replacements]]
+file = "CHANGELOG.md"
+search = "ReleaseDate"
+replace = "{{date}}"
+min = 1
+
+[[package.metadata.release.pre-release-replacements]]
+file = "CHANGELOG.md"
+search = "<!-- next-header -->"
 replace = """
 <!-- next-header -->
 ## [Unreleased] - ReleaseDate
 """
-search = "<!-- next-header -->"
+exactly = 1
 
 [[package.metadata.release.pre-release-replacements]]
-exactly = 1
 file = "CHANGELOG.md"
+search = "<!-- next-url -->"
 replace = """
 <!-- next-url -->
 [Unreleased]: https://github.com/winnow-rs/winnow/compare/{{tag_name}}...HEAD"""
-search = "<!-- next-url -->"
+exactly = 1
 
 [[package.metadata.release.pre-release-replacements]]
-exactly = 1
 file = "src/lib.rs"
-replace = "blob/v{{version}}/CHANGELOG.md"
 search = 'blob/v.+\..+\..+/CHANGELOG.md'
+replace = "blob/v{{version}}/CHANGELOG.md"
+exactly = 1
 
-[profile.bench]
-lto = true
-codegen-units = 1
-debug = 2
+[features]
+alloc = []
+debug = [
+    "std",
+    "dep:anstream",
+    "dep:anstyle",
+    "dep:is_terminal_polyfill",
+    "dep:terminal_size",
+]
+default = ["std"]
+simd = ["dep:memchr"]
+std = [
+    "alloc",
+    "memchr?/std",
+]
+unstable-doc = [
+    "alloc",
+    "std",
+    "simd",
+    "unstable-recover",
+]
+unstable-recover = []
+
+[lib]
+name = "winnow"
+path = "src/lib.rs"
 
 [[example]]
 name = "arithmetic"
+path = "examples/arithmetic/main.rs"
 test = true
 required-features = ["alloc"]
 
 [[example]]
 name = "css"
+path = "examples/css/main.rs"
 test = true
 required-features = ["alloc"]
 
 [[example]]
 name = "custom_error"
+path = "examples/custom_error.rs"
 test = true
 required-features = ["alloc"]
 
 [[example]]
 name = "http"
+path = "examples/http/main.rs"
 required-features = ["alloc"]
 
 [[example]]
 name = "ini"
+path = "examples/ini/main.rs"
 test = true
 required-features = ["std"]
+
+[[example]]
+name = "iterator"
+path = "examples/iterator.rs"
 
 [[example]]
 name = "json"
-test = true
-required-features = ["std"]
-
-[[example]]
-name = "ndjson"
+path = "examples/json/main.rs"
 test = true
 required-features = ["std"]
 
 [[example]]
 name = "json_iterator"
+path = "examples/json_iterator.rs"
 required-features = ["std"]
 
 [[example]]
-name = "iterator"
+name = "ndjson"
+path = "examples/ndjson/main.rs"
+test = true
+required-features = ["std"]
 
 [[example]]
 name = "s_expression"
+path = "examples/s_expression/main.rs"
 required-features = ["alloc"]
 
 [[example]]
 name = "string"
+path = "examples/string/main.rs"
 required-features = ["alloc"]
 
 [[bench]]
@@ -149,26 +183,6 @@ name = "arithmetic"
 path = "examples/arithmetic/bench.rs"
 harness = false
 required-features = ["alloc"]
-
-[[bench]]
-name = "contains_token"
-harness = false
-
-[[bench]]
-name = "find_slice"
-harness = false
-
-[[bench]]
-name = "iter"
-harness = false
-
-[[bench]]
-name = "next_slice"
-harness = false
-
-[[bench]]
-name = "number"
-harness = false
 
 [[bench]]
 name = "http"
@@ -196,8 +210,8 @@ optional = true
 version = "1.0.1"
 optional = true
 
-[dependencies.is-terminal]
-version = "0.4.9"
+[dependencies.is_terminal_polyfill]
+version = "1.48.0"
 optional = true
 
 [dependencies.memchr]
@@ -206,20 +220,23 @@ optional = true
 default-features = false
 
 [dependencies.terminal_size]
-version = "0.2.6"
+version = "0.4.0"
 optional = true
+
+[dev-dependencies.annotate-snippets]
+version = "0.11.3"
+
+[dev-dependencies.anyhow]
+version = "1.0.86"
+
+[dev-dependencies.automod]
+version = "1.0.14"
 
 [dev-dependencies.circular]
 version = "0.3.0"
 
 [dev-dependencies.criterion]
 version = "0.5.1"
-
-[dev-dependencies.doc-comment]
-version = "0.3"
-
-[dev-dependencies.escargot]
-version = "0.5.7"
 
 [dev-dependencies.lexopt]
 version = "0.3.0"
@@ -231,30 +248,92 @@ version = "1.2.0"
 version = "1.1.0"
 
 [dev-dependencies.snapbox]
-version = "0.4.11"
+version = "0.6.21"
 features = ["examples"]
 
 [dev-dependencies.term-transcript]
 version = "0.2.0"
 
-[features]
-alloc = []
-debug = [
-    "dep:anstream",
-    "dep:anstyle",
-    "dep:is-terminal",
-    "dep:terminal_size",
-]
-default = ["std"]
-simd = ["dep:memchr"]
-std = [
-    "alloc",
-    "memchr?/std",
-]
-unstable-doc = [
-    "alloc",
-    "std",
-    "simd",
-    "unstable-recover",
-]
-unstable-recover = []
+[lints.clippy]
+bool_assert_comparison = "allow"
+branches_sharing_code = "allow"
+checked_conversions = "warn"
+collapsible_else_if = "allow"
+create_dir = "warn"
+dbg_macro = "warn"
+debug_assert_with_mut_call = "warn"
+doc_markdown = "warn"
+empty_enum = "warn"
+enum_glob_use = "warn"
+expl_impl_clone_on_copy = "warn"
+explicit_deref_methods = "warn"
+explicit_into_iter_loop = "warn"
+fallible_impl_from = "warn"
+filter_map_next = "warn"
+flat_map_option = "warn"
+float_cmp_const = "warn"
+fn_params_excessive_bools = "warn"
+from_iter_instead_of_collect = "warn"
+if_same_then_else = "allow"
+implicit_clone = "warn"
+imprecise_flops = "warn"
+inconsistent_struct_constructor = "warn"
+inefficient_to_string = "warn"
+infinite_loop = "warn"
+invalid_upcast_comparisons = "warn"
+large_digit_groups = "warn"
+large_stack_arrays = "warn"
+large_types_passed_by_value = "warn"
+let_and_return = "allow"
+linkedlist = "warn"
+lossy_float_literal = "warn"
+macro_use_imports = "warn"
+mem_forget = "warn"
+mutex_integer = "warn"
+needless_continue = "allow"
+needless_for_each = "warn"
+negative_feature_names = "warn"
+path_buf_push_overwrite = "warn"
+ptr_as_ptr = "warn"
+rc_mutex = "warn"
+redundant_feature_names = "warn"
+ref_option_ref = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+result_large_err = "allow"
+same_functions_in_if_condition = "warn"
+semicolon_if_nothing_returned = "warn"
+str_to_string = "warn"
+string_add = "warn"
+string_add_assign = "warn"
+string_lit_as_bytes = "warn"
+string_to_string = "warn"
+todo = "warn"
+trait_duplication_in_bounds = "warn"
+uninlined_format_args = "warn"
+verbose_file_reads = "warn"
+wildcard_imports = "allow"
+zero_sized_map_values = "warn"
+
+[lints.rust]
+unnameable_types = "warn"
+unreachable_pub = "warn"
+unsafe_op_in_unsafe_fn = "warn"
+unused_lifetimes = "warn"
+unused_macro_rules = "warn"
+
+[lints.rust.rust_2018_idioms]
+level = "warn"
+priority = -1
+
+[profile.bench]
+lto = true
+codegen-units = 1
+debug = 2
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"

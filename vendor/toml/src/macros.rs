@@ -1,5 +1,6 @@
-pub use serde::de::{Deserialize, IntoDeserializer};
+pub use serde_core::de::{Deserialize, IntoDeserializer};
 
+use crate::alloc_prelude::*;
 use crate::value::{Array, Table, Value};
 
 /// Construct a [`Table`] from TOML syntax.
@@ -8,11 +9,6 @@ use crate::value::{Array, Table, Value};
 /// let cargo_toml = toml::toml! {
 ///     [package]
 ///     name = "toml"
-///     version = "0.4.5"
-///     authors = ["Alex Crichton <alex@alexcrichton.com>"]
-///
-///     [badges]
-///     travis-ci = { repository = "alexcrichton/toml-rs" }
 ///
 ///     [dependencies]
 ///     serde = "1.0"
@@ -198,27 +194,27 @@ macro_rules! toml_internal {
     }};
 
     (@value (-nan)) => {
-        $crate::Value::Float(-::std::f64::NAN)
+        $crate::Value::Float(::core::f64::NAN.copysign(-1.0))
     };
 
     (@value (nan)) => {
-        $crate::Value::Float(::std::f64::NAN)
+        $crate::Value::Float(::core::f64::NAN.copysign(1.0))
     };
 
     (@value nan) => {
-        $crate::Value::Float(::std::f64::NAN)
+        $crate::Value::Float(::core::f64::NAN.copysign(1.0))
     };
 
     (@value (-inf)) => {
-        $crate::Value::Float(::std::f64::NEG_INFINITY)
+        $crate::Value::Float(::core::f64::NEG_INFINITY)
     };
 
     (@value (inf)) => {
-        $crate::Value::Float(::std::f64::INFINITY)
+        $crate::Value::Float(::core::f64::INFINITY)
     };
 
     (@value inf) => {
-        $crate::Value::Float(::std::f64::INFINITY)
+        $crate::Value::Float(::core::f64::INFINITY)
     };
 
     // Construct a Value from any other type, probably string or boolean or number.

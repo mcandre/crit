@@ -1,12 +1,13 @@
 use winnow::combinator::seq;
 use winnow::prelude::*;
 use winnow::token::take_while;
+use winnow::Result;
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct Color {
-    pub red: u8,
-    pub green: u8,
-    pub blue: u8,
+pub(crate) struct Color {
+    pub(crate) red: u8,
+    pub(crate) green: u8,
+    pub(crate) blue: u8,
 }
 
 impl std::str::FromStr for Color {
@@ -18,7 +19,7 @@ impl std::str::FromStr for Color {
     }
 }
 
-pub fn hex_color(input: &mut &str) -> PResult<Color> {
+pub(crate) fn hex_color(input: &mut &str) -> Result<Color> {
     seq!(Color {
         _: '#',
         red: hex_primary,
@@ -28,7 +29,7 @@ pub fn hex_color(input: &mut &str) -> PResult<Color> {
     .parse_next(input)
 }
 
-fn hex_primary(input: &mut &str) -> PResult<u8> {
+fn hex_primary(input: &mut &str) -> Result<u8> {
     take_while(2, |c: char| c.is_ascii_hexdigit())
         .try_map(|input| u8::from_str_radix(input, 16))
         .parse_next(input)
