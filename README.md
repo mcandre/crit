@@ -108,10 +108,8 @@ Prior art, personal plugs, and tools for developing portable applications (inclu
 
 * [cross](https://github.com/cross-rs/cross) provides the underlying cross-compiler system that powers crit.
 * [cross-toolchains](https://github.com/cross-rs/cross-toolchains) provisions cross Docker images.
-* [mcandre/chandler](https://github.com/mcandre/chandler) normalizes executable archives.
-* [mcandre/factorio](https://github.com/mcandre/factorio) automates crossplatform ports for Go projects.
+* [mcandre/tuco](https://github.com/mcandre/tuco) automates crossplatform ports for Go projects.
 * [mcandre/rockhopper](https://github.com/mcandre/rockhopper) generates install packages.
-* [mcandre/tuggy](https://github.com/mcandre/tuggy) automates multiplatform Docker image builds.
 * [mcandre/unmake](https://github.com/mcandre/unmake) detects quirks in makefiles.
 * [WASM](https://webassembly.org/) provides a portable interface for C/C++ code.
 * [xgo](https://github.com/techknowlogick/xgo) compiles ports for cGo projects.
