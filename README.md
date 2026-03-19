@@ -33,8 +33,6 @@ _/ ___\_  __ \  \   __\
 ...
 ```
 
-See `crit -h` for more options.
-
 # DOWNLOAD
 
 ```sh
@@ -55,7 +53,7 @@ cargo install --force cross --git https://github.com/cross-rs/cross --rev 4e6436
 
 Register `~/.cargo/bin` to `PATH` environment variable.
 
-For more installation methods, see our [install guide](INSTALL.md).
+For details on building from source, see our [development guide](DEVELOPMENT.md).
 
 # CONFIGURATION
 

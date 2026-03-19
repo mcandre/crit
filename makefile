@@ -27,8 +27,9 @@ all: build
 audit:
 	cargo audit
 
-build: lint test
+build:
 	cargo build --release
+	./install-dest
 
 cargo-check:
 	cargo check

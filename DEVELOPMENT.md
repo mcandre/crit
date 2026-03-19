@@ -1,12 +1,10 @@
 # DEVELOPMENT GUIDE
 
-crit follows standard, cargo based operations for compiling and unit testing Rust code.
+We follow standard, `cargo` based operations for compiling and unit testing Rust code.
 
 For advanced operations, such as linting, we further supplement with some software industry tools.
 
-# BUILDTIME REQUIREMENTS
-
-## Prerequisites
+# DEV ENVIRONMENT
 
 * a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))
 * [Docker](https://www.docker.com/)
@@ -22,43 +20,53 @@ For advanced operations, such as linting, we further supplement with some softwa
 
 Register `~/.cargo/bin` to `PATH` environment variable.
 
-# INSTALL BINARIES FROM SOURCE
+# TASKS
+
+We automate engineering tasks.
+
+## Build
+
+```sh
+make
+```
+
+## Install
 
 ```sh
 make install
 ```
 
-# UNINSTALL BINARIES
+## Uninstall
 
 ```sh
 make uninstall
 ```
 
-# SECURITY AUDIT
+## Security Audit
 
 ```sh
 make audit
 ```
 
-# LINT
+## Lint
 
 ```sh
 make lint
 ```
 
-# TEST
+## Test
 
 ```sh
 make test
 ```
 
-# PUBLISH
+## Publish Crate
 
 ```sh
 make publish
 ```
 
-# CLEAN
+## Clean Workspace
 
 ```sh
 make clean
