@@ -6,22 +6,21 @@ For advanced operations, such as linting, we further supplement with some softwa
 
 # BUILDTIME REQUIREMENTS
 
+## Prerequisites
+
 * a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))
-* [bash](https://www.gnu.org/software/bash/) 4+
-* [cross](https://crates.io/crates/cross) 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa
 * [Docker](https://www.docker.com/)
-* POSIX compliant [findutils](https://pubs.opengroup.org/onlinepubs/9799919799/utilities/find.html)
-* POSIX compliant [make](https://pubs.opengroup.org/onlinepubs/9799919799/utilities/make.html)
+* [make](https://pubs.opengroup.org/onlinepubs/9799919799/utilities/make.html)
 * [Rust](https://www.rust-lang.org/en-US/)
-* GNU [tar](https://www.gnu.org/software/tar/) as `gtar`
 * Provision additional dev tools with `make -f install.mk`
 
 ## Recommended
 
-* Apple Silicon macOS users may want to apply `DOCKER_DEFAULT_PLATFORM=linux/amd64`, in order to account for images commonly lacking `linux/arm64` buildx platforms
-* [ASDF](https://asdf-vm.com/) 0.18 (run `asdf reshim` after provisioning)
-* GNU [time](https://www.gnu.org/software/time/)
-* [tree](https://en.wikipedia.org/wiki/Tree_(command))
+* [asdf](https://asdf-vm.com/) 0.18
+
+## Postinstall
+
+Register `~/.cargo/bin` to `PATH` environment variable.
 
 # INSTALL BINARIES FROM SOURCE
 
@@ -51,12 +50,6 @@ make lint
 
 ```sh
 make test
-```
-
-# PORT
-
-```sh
-make port
 ```
 
 # PUBLISH

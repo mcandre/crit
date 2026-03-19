@@ -7,16 +7,12 @@
 	cargo-check \
 	clean \
 	clean-cargo \
-	clean-crit \
 	clean-example \
-	clean-packages \
-	clean-ports \
 	clippy \
 	crit \
 	doc \
 	install \
 	lint \
-	port \
 	publish \
 	rustfmt \
 	test \
@@ -24,13 +20,7 @@
 .IGNORE: \
 	clean \
 	clean-cargo \
-	clean-crit \
-	clean-example \
-	clean-packages \
-	clean-ports
-
-VERSION=0.0.17
-BANNER=crit-$(VERSION)
+	clean-example
 
 all: build
 
@@ -45,30 +35,18 @@ cargo-check:
 
 clean: \
 	clean-cargo \
-	clean-crit \
-	clean-example \
-	clean-packages \
-	clean-ports
+	clean-example
 
 clean-cargo:
 	cargo clean
-
-clean-crit:
-	crit -c
 
 clean-example:
 	rm -f example/Cargo.lock
 	rm -rf example/target
 	rm -rf example/.crit
 
-clean-ports:
-	rm -rf .crit/bin/crit-ports
-
 clippy:
 	cargo clippy
-
-crit:
-	crit -b $(BANNER)
 
 doc:
 	cargo doc
@@ -81,9 +59,6 @@ lint: \
 	clippy \
 	doc \
 	rustfmt
-
-port: crit
-	./port -C .crit/bin -a crit $(BANNER)
 
 publish:
 	cargo publish

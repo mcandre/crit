@@ -1,6 +1,6 @@
 # crit: Rust cross-compiler
 
-[![Crates.io Downloads (recent)](https://img.shields.io/crates/dr/crit?label=crate%20downloads)](https://crates.io/crates/crit) [![GitHub Downloads](https://img.shields.io/github/downloads/mcandre/crit/total?logo=github)](https://github.com/mcandre/crit/releases) [![Test](https://github.com/mcandre/crit/actions/workflows/test.yml/badge.svg)](https://github.com/mcandre/crit/actions/workflows/test.yml) [![license](https://img.shields.io/badge/license-BSD-3)](LICENSE.md) [![Donate](https://img.shields.io/badge/%E2%99%A5-Sponsor-BF3988)](https://github.com/sponsors/mcandre)
+[![Crates.io Downloads (recent)](https://img.shields.io/crates/dr/crit?label=crate%20downloads)](https://crates.io/crates/crit) [![Test](https://github.com/mcandre/crit/actions/workflows/test.yml/badge.svg)](https://github.com/mcandre/crit/actions/workflows/test.yml) [![license](https://img.shields.io/badge/license-BSD-3)](LICENSE.md) [![Donate](https://img.shields.io/badge/%E2%99%A5-Sponsor-BF3988)](https://github.com/sponsors/mcandre)
 
 ```text
              .__  __
@@ -18,14 +18,18 @@ _/ ___\_  __ \  \   __\
 # EXAMPLE
 
 ```console
-$ cd example
+% cd example
 
-$ crit
+% crit
 
-$ ls .crit/bin
-aarch64-apple-darwin
-aarch64-pc-windows-msvc
-aarch64-unknown-linux-gnu
+% tree .crit/bin
+.crit/bin
+├── aarch64-apple-darwin
+│   └── hello
+├── aarch64-pc-windows-msvc
+│   └── hello.exe
+├── aarch64-unknown-linux-gnu
+│   └── hello
 ...
 ```
 
@@ -37,23 +41,19 @@ See `crit -h` for more options.
 cargo install crit
 ```
 
-# PREREQUISITES
+## Prerequisites
 
 * [cargo](https://doc.rust-lang.org/cargo/)
 * [Docker](https://www.docker.com/)
-* [cross](https://github.com/cross-rs/cross) at ref `4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa`
+* [cross](https://github.com/cross-rs/cross) (git ref 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa)
 
 ```sh
 cargo install --force cross --git https://github.com/cross-rs/cross --rev 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa
 ```
 
-## Recommended
+## Postinstall
 
-* a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))
-* Apple Silicon macOS users may want to apply `DOCKER_DEFAULT_PLATFORM=linux/amd64`, in order to account for images commonly lacking `linux/arm64` buildx platforms
-* [Amphetamine](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12) (macOS), [The Caffeine](https://www.microsoft.com/store/productId/9PJBW5SCH9LC) (Windows), [Caffeine](https://launchpad.net/caffeine) (Linux) can prevent hibernation during long builds
-* GNU [time](https://en.wikipedia.org/wiki/Time_(Unix))
-* [tree](https://en.wikipedia.org/wiki/Tree_(command))
+Register `~/.cargo/bin` to `PATH` environment variable.
 
 For more installation methods, see our [install guide](INSTALL.md).
 
@@ -106,10 +106,14 @@ Some cross-compilation performance tips:
 
 Prior art, personal plugs, and tools for developing portable applications (including non-Rust projects)!
 
+* [Amphetamine](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12) (macOS) / [The Caffeine](https://www.microsoft.com/store/productId/9PJBW5SCH9LC) (Windows) / [Caffeine](https://launchpad.net/caffeine) (Linux) can prevent hibernation during long builds
 * [cross](https://github.com/cross-rs/cross) provides the underlying cross-compiler system that powers crit.
 * [cross-toolchains](https://github.com/cross-rs/cross-toolchains) provisions cross Docker images.
 * [mcandre/tuco](https://github.com/mcandre/tuco) automates crossplatform ports for Go projects.
 * [mcandre/rockhopper](https://github.com/mcandre/rockhopper) generates install packages.
 * [mcandre/unmake](https://github.com/mcandre/unmake) detects quirks in makefiles.
+* [tree](https://en.wikipedia.org/wiki/Tree_(command)) browses directories recursively
 * [WASM](https://webassembly.org/) provides a portable interface for C/C++ code.
 * [xgo](https://github.com/techknowlogick/xgo) compiles ports for cGo projects.
+
+🎲
