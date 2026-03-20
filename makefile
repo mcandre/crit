@@ -29,7 +29,6 @@ audit:
 
 build:
 	cargo build --release
-	./install-dest
 
 cargo-check:
 	cargo check
