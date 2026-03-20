@@ -41,9 +41,9 @@ cargo install crit
 
 ## Prerequisites
 
-* [cargo](https://doc.rust-lang.org/cargo/)
-* [Docker](https://www.docker.com/)
 * [cross](https://github.com/cross-rs/cross) (git ref 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa)
+* [Docker](https://www.docker.com/)
+* [rustup](https://rustup.rs/)
 
 ```sh
 cargo install --force cross --git https://github.com/cross-rs/cross --rev 4e64366af6095c84fa4f54a0fa5a2ba7d9a271aa
