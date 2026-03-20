@@ -53,11 +53,9 @@ cargo install --force cross --git https://github.com/cross-rs/cross --rev 4e6436
 
 Register `~/.cargo/bin` to `PATH` environment variable.
 
-For details on building from source, see our [development guide](DEVELOPMENT.md).
+For details on tuning crit, see [CONFIGURATION](CONFIGURATION.md).
 
-# CONFIGURATION
-
-For information on configuring crit, see our [configuration guide](CONFIGURATION.md).
+For details on building from source, see [DEVELOPMENT](DEVELOPMENT.md).
 
 # FAQ
 
@@ -109,7 +107,7 @@ Prior art, personal plugs, and tools for developing portable applications (inclu
 * [cross-toolchains](https://github.com/cross-rs/cross-toolchains) provisions cross Docker images.
 * [mcandre/tuco](https://github.com/mcandre/tuco) automates crossplatform ports for Go projects.
 * [mcandre/rockhopper](https://github.com/mcandre/rockhopper) generates install packages.
-* [mcandre/unmake](https://github.com/mcandre/unmake) detects quirks in makefiles.
+* [mcandre/linters](https://github.com/mcandre/linters) curates linters.
 * [tree](https://en.wikipedia.org/wiki/Tree_(command)) browses directories recursively
 * [WASM](https://webassembly.org/) provides a portable interface for C/C++ code.
 * [xgo](https://github.com/techknowlogick/xgo) compiles ports for cGo projects.

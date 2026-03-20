@@ -1,4 +1,4 @@
-# CONFIGURATION GUIDE
+# CONFIGURATION
 
 crit loads an optional `crit.toml` file in the current working directory.
 

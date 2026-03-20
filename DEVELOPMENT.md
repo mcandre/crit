@@ -1,4 +1,4 @@
-# DEVELOPMENT GUIDE
+# DEVELOPMENT
 
 We follow standard, `cargo` based operations for compiling and unit testing Rust code.
 
@@ -14,7 +14,7 @@ For advanced operations, such as linting, we further supplement with some softwa
 
 ## Recommended
 
-* [asdf](https://asdf-vm.com/) 0.18
+* [asdf](https://asdf-vm.com/)
 
 ## Postinstall
 
