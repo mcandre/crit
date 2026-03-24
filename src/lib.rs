@@ -1,15 +1,13 @@
 //! crit provides predicates for conveniently managing multiple cross target builds.
 
-extern crate pad;
 extern crate regex;
 extern crate toml;
 
-use pad::PadStr;
 use serde::{Deserialize, Serialize};
 
 use std::collections;
 use std::env;
-use std::fmt::{self, Write};
+use std::fmt;
 use std::fs;
 use std::path;
 use std::process;
@@ -30,100 +28,17 @@ pub static ARTIFACT_ROOT_PATH: sync::LazyLock<&path::Path> =
 pub static CROSS_DIR_PATHBUF: sync::LazyLock<path::PathBuf> =
     sync::LazyLock::new(|| ARTIFACT_ROOT_PATH.join("cross"));
 
-/// RUSTUP_TARGET_PATTERN matches Rust target triples from rustup target list output.
-pub static RUSTUP_TARGET_PATTERN: sync::LazyLock<regex::Regex> =
-    sync::LazyLock::new(|| regex::Regex::new(r"(\S+)").unwrap());
-
-/// FRINGE_TARGETS collects Rust platform entries
-/// likely to not work out of the box.
-pub static FRINGE_TARGETS: sync::LazyLock<Vec<&str>> = sync::LazyLock::new(|| {
-    vec![
-        "android",
-        "arm64ec-pc-windows-msvc",
-        "cuda",
-        "emscripten",
-        "fortanix",
-        "fuchsia",
-        "gnullvm",
-        "gnux32",
-        "i686-pc-windows-gnu",
-        "ios",
-        "loongarch",
-        "none-eabi",
-        "ohos",
-        "pc-solaris",
-        "powerpc64le-unknown-linux-musl",
-        "redox",
-        "riscv64gc-unknown-linux-musl",
-        "sparcv9-sun-solaris",
-        "uefi",
-        "unknown-none",
-        "wasm",
-    ]
-});
-
-/// EXCLUSION_TARGETS_PATTERN_REPLACE_TEMPLATE combines `exclusion_targets` and a pipe (|) delimited target string to form a pattern matching skippable targets.
-pub static EXCLUSION_TARGETS_PATTERN_REPLACE_TEMPLATE: &str = r"(exclusion_targets)";
-
-/// generate_target_exclusion_pattern builds a target matching pattern from a collection of targets.
-pub fn generate_target_exclusion_pattern(targets: &[&str]) -> String {
-    EXCLUSION_TARGETS_PATTERN_REPLACE_TEMPLATE.replace("exclusion_targets", &targets.join("|"))
-}
-
-#[test]
-fn test_default_target_exclusion_pattern() {
-    let pattern = regex::Regex::new(&generate_target_exclusion_pattern(&FRINGE_TARGETS)).unwrap();
-    assert!(pattern.is_match("aarch64-linux-android"));
-    assert!(pattern.is_match("aarch64-apple-ios"));
-    assert!(pattern.is_match("i686-pc-windows-gnu"));
-    assert!(!pattern.is_match("aarch64-unknown-linux-gnu"));
-}
-
-/// DEFAULT_TARGET_EXCLUSION_PATTERN matches problematic target triples,
-/// such as bare metal targets that may lack support for the `std` package,
-/// or targets without community supported cross images.
-pub static DEFAULT_TARGET_EXCLUSION_PATTERN: sync::LazyLock<String> =
-    sync::LazyLock::new(|| generate_target_exclusion_pattern(&FRINGE_TARGETS));
-
-/// CRATE_FEATURE_EXCLUSIONS collects development applications
-/// generally not intended for release.
-pub static CRATE_FEATURE_EXCLUSIONS: sync::LazyLock<Vec<&str>> = sync::LazyLock::new(|| {
-    vec![
-        // tinyrick
-        "letmeout",
-    ]
-});
-
-/// EXCLUSION_FEATURES_PATTERN_REPLACE_TEMPLATE combines `exclusion_features` and a pipe (|) delimited feature string to form a pattern matching skippable features.
-pub static EXCLUSION_FEATURES_PATTERN_REPLACE_TEMPLATE: &str = r"^(exclusion_features)$";
-
-/// generate_feature_exclusion_pattern builds a feature matching pattern from a collection of features.
-pub fn generate_feature_exclusion_pattern(features: &[&str]) -> String {
-    EXCLUSION_FEATURES_PATTERN_REPLACE_TEMPLATE.replace("exclusion_features", &features.join("|"))
-}
-
-#[test]
-fn test_default_feature_exclusion_pattern() {
-    let pattern = regex::Regex::new(&generate_feature_exclusion_pattern(
-        &CRATE_FEATURE_EXCLUSIONS,
-    ))
-    .unwrap();
-    assert!(pattern.is_match("letmeout"));
-    assert!(!pattern.is_match("derive"));
-}
-
-/// DEFAULT_FEATURE_EXCLUSION_PATTERN matches problematic binary features,
-/// such as internal development programs.
-pub static DEFAULT_FEATURE_EXCLUSION_PATTERN: sync::LazyLock<String> =
-    sync::LazyLock::new(|| generate_feature_exclusion_pattern(&CRATE_FEATURE_EXCLUSIONS));
-
 /// BUILD_MODES enumerates cargo's major build modes.
 pub static BUILD_MODES: sync::LazyLock<Vec<&str>> =
     sync::LazyLock::new(|| vec!["debug", "release"]);
 
-/// BINARY_FILE_EXTENSIONS collects potential cargo build binary file extensions.
-pub static BINARY_FILE_EXTENSIONS: sync::LazyLock<Vec<&str>> =
-    sync::LazyLock::new(|| vec!["", "exe", "js", "wasm"]);
+/// DEFAULT_BINARY_EXTENSIONS collects common cargo build binary file extensions.
+pub static DEFAULT_BINARY_EXTENSIONS: sync::LazyLock<Vec<String>> = sync::LazyLock::new(|| {
+    ["", "exe", "js", "wasm"]
+        .iter()
+        .map(|e| e.to_string())
+        .collect()
+});
 
 /// CritError models bad computer states.
 #[derive(Debug)]
@@ -156,39 +71,118 @@ impl die::PrintExit for CritError {
     }
 }
 
-/// format_targets renders a target table.
-pub fn format_targets(targets: collections::BTreeMap<String, bool>) -> Result<String, CritError> {
-    let target_col_header: String = "TARGET".to_string();
-    let target_col_header_len: usize = target_col_header.len();
+/// Target identifies computing platforms.
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Target {
+    // arch denotes a chipset.
+    pub arch: String,
 
-    let mut target_col_values: Vec<&String> = targets.keys().collect();
-    target_col_values.push(&target_col_header);
+    // vendor denotes a manufacturer.
+    pub vendor: String,
 
-    let max_target_len: usize = target_col_values
-        .iter()
-        .map(|e| e.len())
-        .max()
-        .unwrap_or(target_col_header_len);
+    // os denotes an operating system.
+    //
+    // Warning: `Some("none")` and `None` represent distinct target identifiers.
+    pub os: Option<String>,
 
-    let mut buf: String = String::new();
-    write!(
-        buf,
-        "{} ENABLED",
-        target_col_header.pad_to_width(max_target_len)
-    )
-    .map_err(|e| CritError::IOError(format!("unable to render target table format header: {e}")))?;
+    // abi denotes a chipset/libc variant.
+    pub abi: Option<String>,
+}
 
-    for (target, enabled) in targets {
-        write!(buf, "\n{} {}", target.pad_to_width(max_target_len), enabled).map_err(|e| {
-            CritError::IOError(format!("unable to render target table format row: {e}"))
-        })?;
+// RUST_TARGET_PATTERN extracts metadata from Rust target identifiers.
+pub static RUST_TARGET_PATTERN: sync::LazyLock<regex::Regex> = sync::LazyLock::new(|| {
+    regex::Regex::new(r"^([^\- ]+)-([^\- ]+)(-([^\- ]+)(-([^\- ]+))?)?(\s+\(installed\))?$")
+        .unwrap()
+});
+
+impl Target {
+    /// parse converts Rust target strings to objects.
+    pub fn parse(id: &str) -> Result<Target, CritError> {
+        let pattern = &RUST_TARGET_PATTERN;
+
+        let m = match pattern.captures(id) {
+            Some(e) => e,
+            _ => return Err(CritError::IOError(format!("invalid rust target id: {id}"))),
+        };
+
+        let arch = m[1].to_string();
+        let vendor = m[2].to_string();
+        let os = m.get(4).map(|e| e.as_str().to_string());
+        let abi = m.get(6).map(|e| e.as_str().to_string());
+        Ok(Target {
+            arch,
+            vendor,
+            os,
+            abi,
+        })
     }
+}
 
-    Ok(buf)
+#[test]
+fn test_target_parsing() -> Result<(), CritError> {
+    assert_eq!(
+        Target::parse("aarch64-apple-ios-macabi")?,
+        Target {
+            arch: "aarch64".to_string(),
+            vendor: "apple".to_string(),
+            os: Some("ios".to_string()),
+            abi: Some("macabi".to_string())
+        }
+    );
+    assert_eq!(
+        Target::parse("aarch64-apple-darwin")?,
+        Target {
+            arch: "aarch64".to_string(),
+            vendor: "apple".to_string(),
+            os: Some("darwin".to_string()),
+            abi: None
+        }
+    );
+    assert_eq!(
+        Target::parse("aarch64-apple-darwin (installed)")?,
+        Target {
+            arch: "aarch64".to_string(),
+            vendor: "apple".to_string(),
+            os: Some("darwin".to_string()),
+            abi: None
+        }
+    );
+    assert_eq!(
+        Target::parse("wasm32-wasip1")?,
+        Target {
+            arch: "wasm32".to_string(),
+            vendor: "wasip1".to_string(),
+            os: None,
+            abi: None
+        }
+    );
+    assert!(Target::parse("wasm32").is_err());
+    Ok(())
+}
+
+impl fmt::Display for Target {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.arch)?;
+        write!(f, "-")?;
+        write!(f, "{}", self.vendor)?;
+
+        if let Some(os) = &self.os {
+            write!(f, "-")?;
+            write!(f, "{}", os)?;
+
+            if let Some(abi) = &self.abi {
+                write!(f, "-")?;
+                write!(f, "{}", abi)?;
+            }
+        }
+
+        Ok(())
+    }
 }
 
 /// get_applications queries Cargo.toml for the list of binary application names.
-pub fn get_applications(feature_exclusion_pattern: regex::Regex) -> Result<Vec<String>, CritError> {
+pub fn get_applications(feature_excludes: &[&str]) -> Result<Vec<String>, CritError> {
     let bin_sections: Vec<toml::Value> = fs::read_to_string("Cargo.toml")
         .map_err(|e| CritError::IOError(format!("unable to read Cargo.toml: {e}")))
         .and_then(|e| {
@@ -212,24 +206,20 @@ pub fn get_applications(feature_exclusion_pattern: regex::Regex) -> Result<Vec<S
 
     let name_options: Vec<Option<&toml::Value>> = bin_sections
         .iter()
-        .filter(|e| {
-            let feature_values_result: Option<&Vec<toml::Value>> =
-                e.get("required-features").and_then(|e2| e2.as_array());
-
-            if feature_values_result.is_none() {
-                return true;
-            }
-
-            let feature_values: &Vec<toml::Value> = feature_values_result.unwrap();
-
-            let feature_options: Vec<Option<&str>> =
-                feature_values.iter().map(|e2| e2.as_str()).collect();
-
-            feature_options.iter().any(|e| match e {
-                Some(feature) => feature_exclusion_pattern.is_match(feature),
-                None => false,
-            })
-        })
+        .filter(
+            |e| match e.get("required-features").and_then(|e2| e2.as_array()) {
+                None => true,
+                Some(feature_values) => {
+                    feature_values
+                        .iter()
+                        .map(|e2| e2.as_str())
+                        .any(|e| match e {
+                            Some(feature) => !feature_excludes.contains(&feature),
+                            None => false,
+                        })
+                }
+            },
+        )
         .map(|e| e.get("name"))
         .collect();
 
@@ -262,24 +252,44 @@ pub fn get_applications(feature_exclusion_pattern: regex::Regex) -> Result<Vec<S
 
 /// Crit models a multiplatform build operation.
 #[derive(Debug, Default, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Crit {
     /// debug enables additional logging.
     pub debug: Option<bool>,
 
-    /// rustflags maps target triple patterns to custom RUSTFLAGS settings (default: $RUSTFLAGS).
-    pub rustflags: Option<collections::BTreeMap<String, String>>,
-
-    /// exclusion_targets skips matching targets (default: FRINGE_TARGETS).
-    pub exclusion_targets: Option<Vec<String>>,
-
-    /// exclusion_features skips matching features (default: CRATE_FEATURE_EXCLUSIONS).
-    pub exclusion_features: Option<Vec<String>>,
-
     /// banner denotes an optional parent directory prefix (e.g. "hello-1.0").
     pub banner: Option<String>,
 
+    /// rustflags maps target triple patterns to custom RUSTFLAGS settings (default: $RUSTFLAGS).
+    pub rustflags: Option<collections::BTreeMap<String, String>>,
+
+    /// feature_excludes skips matching features.
+    pub feature_excludes: Option<Vec<String>>,
+
     /// cross_args forwards additional flags to cross.
     pub cross_args: Option<Vec<String>>,
+
+    /// arch collects enabled chipets.
+    pub arch: Vec<String>,
+
+    /// vendor collects enabled vendors.
+    pub vendor: Vec<String>,
+
+    /// os collects enabled operating systems.
+    pub os: Vec<String>,
+
+    /// abi collects enabled chipset/libc variants.
+    pub abi: Vec<String>,
+
+    /// target_excludes skips targets.
+    pub target_excludes: Option<Vec<String>>,
+
+    /// binary_extensions selects file extensions to collate (default: `DEFAULT_BINARY_EXTENSIONS`).
+    pub binary_extensions: Option<Vec<String>>,
+
+    /// targets caches enabled Rust targets.
+    #[serde(skip)]
+    targets: Option<Vec<Target>>,
 
     /// enabled_applications caches active applications.
     #[serde(skip)]
@@ -291,68 +301,109 @@ impl Crit {
     pub fn load(pth: &str) -> Result<Self, CritError> {
         let toml_string = fs::read_to_string(pth)
             .map_err(|_| CritError::IOError(format!("unable to read file: {pth}")))?;
-        let crit: Crit = toml::from_str(&toml_string)
+        let mut crit: Crit = toml::from_str(&toml_string)
             .map_err(|e| CritError::TOMLParseError(e.message().to_string()))?;
+        crit.update_targets()?;
         Ok(crit)
     }
 
-    /// get_targets queries rustup for the list of available Rust target triples.
-    pub fn get_targets(&self) -> Result<collections::BTreeMap<String, bool>, CritError> {
-        let target_exclusion_pattern = regex::Regex::new(&generate_target_exclusion_pattern(
-            &self
-                .exclusion_targets
-                .clone()
-                .unwrap_or(
-                    FRINGE_TARGETS
-                        .clone()
-                        .iter()
-                        .map(|e| e.to_string())
-                        .collect::<Vec<String>>(),
-                )
-                .iter()
-                .map(|e| e.as_ref())
-                .collect::<Vec<&str>>(),
-        ))
-        .map_err(|e| CritError::RegexParseError(e.to_string()))?;
+    /// update_targets refreshes the targets cache.
+    pub fn update_targets(&mut self) -> Result<(), CritError> {
+        let target_excludes = self.target_excludes.clone().unwrap_or_default();
 
         let mut cmd = process::Command::new("rustup");
         cmd.args(["target", "list"]);
-        cmd.stdout(process::Stdio::piped());
-        cmd.stderr(process::Stdio::piped());
 
         if let Some(true) = self.debug {
-            eprintln!("debug: running command: {:?}", cmd);
+            eprintln!("running command: {:?}", cmd);
         }
 
-        cmd.output()
-            .map_err(|e| CritError::IOError(format!("unable to run rustup: {e}")))
-            .and_then(|output| match output.status.success() {
-                // work around rustup writing error messages to stdout
-                false => Err(CritError::IOError(
-                    "unable to query rustup target list".to_string(),
-                )),
-                _ => String::from_utf8(output.stdout).map_err(|e| {
-                    CritError::IOError(format!("unable to decode rustup stdout stream: {e}"))
-                }),
+        let output = cmd
+            .output()
+            .map_err(|e| CritError::IOError(e.to_string()))?;
+
+        if !output.status.success() {
+            return Err(CritError::IOError(format!(
+                "failed to query rustup targets: {}",
+                output.status
+            )));
+        }
+
+        let stdout_utf8 =
+            String::from_utf8(output.stdout).map_err(|e| CritError::IOError(e.to_string()))?;
+        let mut available_targets: Vec<Target> = Vec::new();
+
+        for line in stdout_utf8.lines() {
+            let target = Target::parse(line)?;
+            available_targets.push(target);
+        }
+
+        let arches = self
+            .arch
+            .iter()
+            .cloned()
+            .collect::<collections::HashSet<String>>();
+        let vendors = self
+            .vendor
+            .iter()
+            .cloned()
+            .collect::<collections::HashSet<String>>();
+        let operating_systems = self
+            .os
+            .iter()
+            .map(|e| match e.as_str() {
+                "" => None,
+                e => Some(e.to_string()),
             })
-            .map(|text| {
-                text.lines()
-                    .filter(|line| RUSTUP_TARGET_PATTERN.is_match(line))
-                    .map(|line| {
-                        RUSTUP_TARGET_PATTERN
-                            .captures(line)
-                            .and_then(|e| e.get(1))
-                            .map(|e| e.as_str())
-                            .unwrap()
-                    })
-                    .map(|target| {
-                        (
-                            target.to_string(),
-                            !target_exclusion_pattern.is_match(target),
-                        )
-                    })
-                    .collect()
+            .collect::<collections::HashSet<Option<String>>>();
+        let abis = self
+            .abi
+            .iter()
+            .map(|e| match e.as_str() {
+                "" => None,
+                e => Some(e.to_string()),
             })
+            .collect::<collections::HashSet<Option<String>>>();
+
+        for arch in &arches {
+            if !available_targets.iter().any(|target| target.arch == *arch) {
+                return Err(CritError::IOError(format!("invalid arch: {:?}", arch)));
+            }
+        }
+
+        for vendor in &vendors {
+            if !available_targets
+                .iter()
+                .any(|target| target.vendor == *vendor)
+            {
+                return Err(CritError::IOError(format!("invalid vendor: {:?}", vendor)));
+            }
+        }
+
+        for os in &operating_systems {
+            if !available_targets.iter().any(|target| target.os == *os) {
+                return Err(CritError::IOError(format!("invalid os: {:?}", os)));
+            }
+        }
+
+        for abi in &abis {
+            if !available_targets.iter().any(|target| target.abi == *abi) {
+                return Err(CritError::IOError(format!("invalid abi: {:?}", abi)));
+            }
+        }
+
+        let targets = available_targets
+            .into_iter()
+            .filter(|target| {
+                arches.contains(&target.arch)
+                    && vendors.contains(&target.vendor)
+                    && operating_systems.contains(&target.os)
+                    && abis.contains(&target.abi)
+                    && !target_excludes.contains(&target.to_string())
+            })
+            .collect::<Vec<Target>>();
+        self.targets = Some(targets);
+        Ok(())
     }
 
     /// build_target executes a cross build.
@@ -413,13 +464,22 @@ impl Crit {
         let enabled_applications: Vec<String> =
             self.enabled_applications.clone().unwrap_or_default();
 
+        let binary_extensions_strings: Vec<String> = self
+            .binary_extensions
+            .clone()
+            .unwrap_or(DEFAULT_BINARY_EXTENSIONS.clone());
+        let binary_extensions_strs = binary_extensions_strings
+            .iter()
+            .map(|e| e.as_str())
+            .collect::<Vec<&str>>();
+
         for application in enabled_applications {
             let dest_dir_pathbuf: path::PathBuf = bin_dir_path.join(target);
             let dest_dir_str: &str = &dest_dir_pathbuf.display().to_string();
 
             fs::create_dir_all(dest_dir_str).map_err(|err| CritError::IOError(err.to_string()))?;
 
-            for extension in BINARY_FILE_EXTENSIONS.clone() {
+            for extension in &binary_extensions_strs {
                 for mode in BUILD_MODES.clone() {
                     let mut source_pathbuf: path::PathBuf = target_dir_pathbuf
                         .join(target)
@@ -446,36 +506,19 @@ impl Crit {
 
     /// run builds targets.
     pub fn run(&mut self) -> Result<(), CritError> {
-        let targets: collections::BTreeMap<String, bool> = self.get_targets()?;
+        let targets = self.targets.clone().unwrap_or_default();
 
-        let enabled_targets: Vec<&str> = targets
-            .iter()
-            .filter(|&(_, &enabled)| enabled)
-            .map(|(target, _)| target.as_ref())
-            .collect();
-
-        if enabled_targets.is_empty() {
-            return Err(CritError::IOError("no targets enabled".to_string()));
+        if targets.is_empty() {
+            eprintln!("warning: empty targets");
+            return Ok(());
         }
 
-        let feature_exclusion_pattern = regex::Regex::new(&generate_feature_exclusion_pattern(
-            &self
-                .exclusion_features
-                .clone()
-                .unwrap_or(
-                    CRATE_FEATURE_EXCLUSIONS
-                        .clone()
-                        .iter()
-                        .map(|e| e.to_string())
-                        .collect::<Vec<String>>(),
-                )
-                .iter()
-                .map(|e| e.as_ref())
-                .collect::<Vec<&str>>(),
-        ))
-        .map_err(|e| CritError::RegexParseError(e.to_string()))?;
-
-        self.enabled_applications = Some(get_applications(feature_exclusion_pattern)?);
+        let feature_excludes_strings = self.feature_excludes.clone().unwrap_or_default();
+        let feature_excludes_strs = feature_excludes_strings
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<&str>>();
+        self.enabled_applications = Some(get_applications(&feature_excludes_strs)?);
 
         let bin_dir_pathbuf = if let Some(banner) = &self.banner
             && !banner.is_empty()
@@ -485,13 +528,12 @@ impl Crit {
             &ARTIFACT_ROOT_PATH.join("bin")
         };
 
-        for target in enabled_targets {
-            eprintln!("building {}", target);
-            self.build_target(target, bin_dir_pathbuf)?;
+        for target in targets {
+            eprintln!("building {target}");
+            self.build_target(&target.to_string(), bin_dir_pathbuf)?;
         }
 
         eprintln!("artifacts copied to {:?}", bin_dir_pathbuf);
-
         Ok(())
     }
 }

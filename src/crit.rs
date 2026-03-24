@@ -7,7 +7,6 @@ extern crate regex;
 
 use die::{Die, die};
 use std::env;
-use std::fs;
 
 /// CLI entrypoint
 fn main() {
@@ -29,7 +28,6 @@ fn main() {
         "remove artifacts directory and docker containers",
     );
     opts.optflag("d", "debug", "enable additional logging");
-    opts.optflag("l", "list-targets", "list enabled targets");
     opts.optflag("h", "help", "print usage info");
     opts.optflag("v", "version", "print version info");
 
@@ -55,18 +53,9 @@ fn main() {
         die!(0);
     }
 
-    let mut c = crit::Crit::default();
-
-    let config_path_exists = match fs::exists(crit::CONFIGURATION_FILENAME) {
+    let mut c = match crit::Crit::load(crit::CONFIGURATION_FILENAME) {
         Err(e) => die!(1; format!("error: {e}")),
         Ok(e) => e,
-    };
-
-    if config_path_exists {
-        c = match crit::Crit::load(crit::CONFIGURATION_FILENAME) {
-            Err(e) => die!(1; format!("error: {e}")),
-            Ok(e) => e,
-        }
     };
 
     if debug {
@@ -85,21 +74,6 @@ fn main() {
 
     if arguments.contains(&"--".to_string()) {
         c.cross_args = Some(optmatches.free.clone());
-    }
-
-    if optmatches.opt_present("l") {
-        let targets = match c.get_targets() {
-            Err(e) => die!(1; format!("error: {e}")),
-            Ok(e) => e,
-        };
-
-        let target_table: String = match crit::format_targets(targets) {
-            Err(e) => die!(1; format!("error: {e}")),
-            Ok(e) => e,
-        };
-
-        println!("{}", target_table);
-        die!(0);
     }
 
     if let Err(e) = c.run() {
