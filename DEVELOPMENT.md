@@ -4,7 +4,7 @@ We follow standard, `cargo` based operations for compiling and unit testing Rust
 
 For advanced operations, such as linting, we further supplement with some software industry tools.
 
-# DEV ENVIRONMENT
+# PREREQUISITES
 
 * a UNIX-like environment (e.g. [WSL](https://learn.microsoft.com/en-us/windows/wsl/))
 * [Docker](https://www.docker.com/)
