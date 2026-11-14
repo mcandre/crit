@@ -105,8 +105,9 @@ Prior art, personal plugs, and tools for developing portable applications (inclu
 * [Amphetamine](https://apps.apple.com/us/app/amphetamine/id937984704?mt=12) (macOS) / [The Caffeine](https://www.microsoft.com/store/productId/9PJBW5SCH9LC) (Windows) / [Caffeine](https://launchpad.net/caffeine) (Linux) can prevent hibernation during long builds
 * [cross](https://github.com/cross-rs/cross) provides the underlying cross-compiler system that powers crit.
 * [cross-toolchains](https://github.com/cross-rs/cross-toolchains) provisions cross Docker images.
+* [mcandre/chiri](https://github.com/mcandre/chiri) generates install packages with pure Rust.
 * [mcandre/tuco](https://github.com/mcandre/tuco) automates crossplatform ports for Go projects.
-* [mcandre/rockhopper](https://github.com/mcandre/rockhopper) generates install packages.
+* [mcandre/rockhopper](https://github.com/mcandre/rockhopper) generates install packages with Docker.
 * [mcandre/linters](https://github.com/mcandre/linters) curates linters.
 * [tree](https://en.wikipedia.org/wiki/Tree_(command)) browses directories recursively
 * [WASM](https://webassembly.org/) provides a portable interface for C/C++ code.
