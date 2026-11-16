@@ -1,6 +1,6 @@
 # crit: Rust cross-compiler
 
-[![Crates.io Downloads (recent)](https://img.shields.io/crates/dr/crit?label=crate%20downloads)](https://crates.io/crates/crit) [![Test](https://github.com/mcandre/crit/actions/workflows/test.yml/badge.svg)](https://github.com/mcandre/crit/actions/workflows/test.yml) [![license](https://img.shields.io/badge/license-BSD-3)](LICENSE.md) [![Donate](https://img.shields.io/badge/%E2%99%A5-Sponsor-BF3988)](https://github.com/sponsors/mcandre)
+[![Crate Downloads](https://badgen.net/crates/d/crit?label=crate+downloads)](https://crates.io/crates/crit) [![API Docs](https://badgen.net/static/docs/API/3eca2a?icon=docs.rs)](https://docs.rs/crit/latest/crit/) [![CI/CD](https://badgen.net/github/checks/mcandre/crit?icon=github)](https://github.com/mcandre/crit/actions) [![License](https://badgen.net/static/license/BSD/ab2b29)](LICENSE.md) [![Donate](https://badgen.net/static/sponsor/%E2%99%A5?color=bf3988)](https://github.com/sponsors/mcandre)
 
 ```text
              .__  __
